@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class SimpleInstanceBrush : InstanceBrush {
 
+    // store then an array of game object
     public override void draw(float x, float z) {
         spawnObject(x, z);
         spawnObject(x - radius, z - radius);

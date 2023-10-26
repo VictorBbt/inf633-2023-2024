@@ -48,7 +48,7 @@ public class GeneticAlgo : MonoBehaviour
         {
             animals.Add(makeAnimal());
         }
-        customTerrain.debug.text = "N° animals: " + animals.Count.ToString();
+        customTerrain.debug.text = "N? animals: " + animals.Count.ToString();
 
         // Update grass elements/food resources.
         updateResources();
@@ -61,11 +61,15 @@ public class GeneticAlgo : MonoBehaviour
     {
         Vector2 detail_sz = customTerrain.detailSize();
         int[,] details = customTerrain.getDetails();
+
+        //int objectCount = customTerrain.getObjectCount();
         currentGrowth += vegetationGrowthRate;
         while (currentGrowth > 1.0f)
         {
             int x = (int)(UnityEngine.Random.value * detail_sz.x);
             int y = (int)(UnityEngine.Random.value * detail_sz.y);
+            // Render the objects on the scene (grass, ...)
+            customTerrain.spawnObject(customTerrain.getInterp3(x, y), 1, customTerrain.registerPrefab(customTerrain.object_prefab[0]));
             details[y, x] = 1;
             currentGrowth -= 1.0f;
         }
@@ -100,7 +104,7 @@ public class GeneticAlgo : MonoBehaviour
     }
 
     /// <summary>
-    /// Method to add an animal inherited from anothed. It spawns where the parent was.
+    /// Method to add an animal inherited from another. It spawns where the parent was.
     /// </summary>
     /// <param name="parent"></param>
     public void addOffspring(Animal parent)

@@ -13,7 +13,7 @@ public class CustomTerrain : MonoBehaviour {
     public int brush_radius = 10;
 
     [Header("Instance brush attributes")]
-    public GameObject object_prefab = null;
+    public GameObject[] object_prefab = new GameObject[5];
     public float min_scale = 0.8f;
     public float max_scale = 1.2f;
 
@@ -26,6 +26,7 @@ public class CustomTerrain : MonoBehaviour {
     private int heightmap_width;
     private int heightmap_height;
     private float[,] heightmap_data;
+    public float[,] moisture_data;
     private int amap_width, amap_height;
     private int detail_width, detail_height;
     private int[,] detail_layer = null;
@@ -47,6 +48,7 @@ public class CustomTerrain : MonoBehaviour {
         heightmap_width = terrain_data.heightmapResolution;
         heightmap_height = terrain_data.heightmapResolution;
         heightmap_data = terrain_data.GetHeights(0, 0, heightmap_width, heightmap_height);
+        moisture_data = new float[heightmap_width, heightmap_height];
         current_brush = null;
         highlight_go = GameObject.Find("Cursor Highlight");
         highlight_proj = highlight_go.GetComponent<Projector>();
@@ -66,7 +68,7 @@ public class CustomTerrain : MonoBehaviour {
         //     }
         // }
         // saveTextures();
-        // Reset and save grass
+        // Reset and save  ss
         for (int y = 0; y < detail_height; y++) {
             for (int x = 0; x < detail_width; x++) {
                 detail_layer[x, y] = 0;
@@ -118,7 +120,7 @@ public class CustomTerrain : MonoBehaviour {
 
         TreePrototype proto = new TreePrototype();
         proto.bendFactor = 0.0f;
-        proto.prefab = object_prefab;
+        proto.prefab = object_prefab[0];
         List<TreePrototype> protos = new List<TreePrototype>(terrain_data.treePrototypes);
         protos.Add(proto);
         terrain_data.treePrototypes = protos.ToArray();
@@ -156,6 +158,11 @@ public class CustomTerrain : MonoBehaviour {
     public Vector3 getNormal(float x, float z) {
         return terrain_data.GetInterpolatedNormal(x / heightmap_width,
                                                   z / heightmap_height);
+    }
+
+    public float getMoisture(int x, int z)
+    {
+        return moisture_data[x, z]; 
     }
 
     // Set the grid height for a node
@@ -277,4 +284,38 @@ public class CustomTerrain : MonoBehaviour {
     public Brush getBrush() {
         return current_brush;
     }
+
+    public float getMaxHeight() {
+        float maxHeight = 0f;
+        for(int xi = 0; xi <= heightmap_width; xi++)
+        {
+            for (int zi = 0; zi <= heightmap_height; zi++)
+            {
+                float curH = get(xi, zi);
+                if(curH > maxHeight)
+                {
+                    maxHeight = curH;
+                }
+            }
+        }
+        return maxHeight;
+    }
+
+    public float getMinHeight()
+    {
+        float minHeight = get(0, 0);
+        for (int xi = 0; xi <= heightmap_width; xi++)
+        {
+            for (int zi = 0; zi <= heightmap_height; zi++)
+            {
+                float curH = get(xi, zi);
+                if (curH < minHeight)
+                {
+                    minHeight = curH;
+                }
+            }
+        }
+        return minHeight;
+    }
+
 }

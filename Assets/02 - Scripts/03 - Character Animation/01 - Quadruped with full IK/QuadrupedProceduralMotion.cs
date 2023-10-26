@@ -149,17 +149,20 @@ public class QuadrupedProceduralMotion : MonoBehaviour
     private void RootAdaptation()
     {
         // Origin of the ray.
-        Vector3 raycastOrigin = groundChecker.position;
-
+        //Vector3 raycastOrigin = transform.position + new Vector3(0f, 10f, 0f);
+        Vector3 raycastOrigin = headBone.position + new Vector3(0f, 10f, 0f);
+        //print(hips.position);
         // The ray information gives you where you hit and the normal of the terrain in that location.
-        if (Physics.Raycast(raycastOrigin, -transform.up, out RaycastHit hit, Mathf.Infinity))
+        LayerMask groundRaycastMask = ~0;
+        Debug.DrawRay(raycastOrigin, -100*transform.up);
+        if (Physics.Raycast(raycastOrigin, -transform.up, out RaycastHit hit, Mathf.Infinity, groundRaycastMask))
         {
-            if (hit.transform.gameObject.layer == LayerMask.NameToLayer("Ground"))
-            {
+
                 posHit = hit.point;
+                //print(hit.point);
                 distanceHit = hit.distance;
                 normalTerrain = hit.normal;
-            }
+
         }
 
         /*
@@ -171,8 +174,8 @@ public class QuadrupedProceduralMotion : MonoBehaviour
 
         // START TODO ###################
 
-        // hips.position = ...
-        // hips.rotation = ...
+         hips.position = posHit - headBone.position + hips.position + new Vector3(0f, 0.4f, 0f);
+        hips.rotation = Quaternion.Slerp(hips.rotation, Quaternion.FromToRotation(hips.up, normalTerrain) *hips.rotation,0.1f);
 
         // END TODO ###################
     }
@@ -233,11 +236,11 @@ public class QuadrupedProceduralMotion : MonoBehaviour
 
         // START TODO ###################
 
-        // goalWorldLookDir = ...
-        // goalLocalLookDir = ...
+        goalWorldLookDir = goal.transform.position - headBone.transform.position;
+        goalLocalLookDir = headBone.parent.InverseTransformDirection(goalWorldLookDir);
 
-        Quaternion targetLocalRotation = Quaternion.identity; // Change!
-
+        //Quaternion targetLocalRotation = Quaternion.LookRotation(Vector3.RotateTowards(headBone.forward, goalLocalLookDir, speedHead, angleHeadLimit)) ;
+        Quaternion targetLocalRotation = Quaternion.identity;
         // END TODO ###################
 
         /* 

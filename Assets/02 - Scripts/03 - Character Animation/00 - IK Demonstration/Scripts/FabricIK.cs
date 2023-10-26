@@ -71,10 +71,10 @@ public class FabricIK : MonoBehaviour
             // START TODO ###################
 
             // Just a placeholder. Change with the correct transform!
-            bones[i] = transform.parent;
+            bones[i] = current;
 
             // bones[i] = ...
-            // startingBoneRotation[i] = ...
+            startingBoneRotation[i] = current.rotation;
 
             // END TODO ###################
 
@@ -96,8 +96,9 @@ public class FabricIK : MonoBehaviour
             {
                 // START TODO ###################
 
-                // bonesLength[i] = ...
-                // completeLength += ...
+                bonesLength[i] = (bones[i + 1].position - bones[i].position).magnitude;
+
+                completeLength += bonesLength[i];
 
                 // END TODO ###################
 
@@ -158,9 +159,18 @@ public class FabricIK : MonoBehaviour
         // START TODO ###################
 
         // Change condition!
-        if (true)
+        if ((bonesPositions[0] - target.position).magnitude > completeLength)
         {
-            // bonesPositions[i] = ...
+            float sumLength = 0;
+            for (int i = 0; i < bones.Length-1; i++)
+            {
+                print("\n");
+                print(bones.Length);
+
+
+                sumLength += bonesLength[i];
+                bonesPositions[i+1] = (target.position - bonesPositions[0]).normalized * sumLength;
+            }
         }
 
         // END TODO ###################
@@ -195,10 +205,16 @@ public class FabricIK : MonoBehaviour
 
                     // START TODO ###################
 
-                    // if...
-                    //     bonesPositions[i] = ...
-                    // else...
-                    //     bonesPositions[i] = ...
+                    if (i == bonesPositions.Length - 1)
+                    {
+                        bonesPositions[i] = target.position;
+                    }
+
+                    else
+                    {
+                        bonesPositions[i] = bonesPositions[i + 1] + bonesLength[i] * (bonesPositions[i] - bonesPositions[i + 1]).normalized;
+                    }
+
 
                     // END TODO ###################
                 }
@@ -211,8 +227,16 @@ public class FabricIK : MonoBehaviour
                      */
 
                     // START TODO ###################
+                    if (i == bonesPositions.Length - 1)
+                    {
+                        bonesPositions[i] = target.position;
+                    }
+                    else
+                    {
+                        bonesPositions[i] = bonesPositions[i - 1] + bonesLength[i - 1] * (bonesPositions[i] - bonesPositions[i - 1]).normalized;
+                    }
 
-                    // bonesPositions[i] = ...
+
 
                     // END TODO ###################
 
@@ -236,7 +260,7 @@ public class FabricIK : MonoBehaviour
                     var projectedPole = plane.ClosestPointOnPlane(pole.position);
                     var projectedBone = plane.ClosestPointOnPlane(bonesPositions[i]);
                     var angle = Vector3.SignedAngle(projectedBone - bonesPositions[i - 1], projectedPole - bonesPositions[i - 1], plane.normal);
-                    bonesPositions[i] = Quaternion.AngleAxis(angle, plane.normal) * (bonesPositions[i] - bonesPositions[i - 1]) + bonesPositions[i - 1]; 
+                    bonesPositions[i] = Quaternion.AngleAxis(angle, plane.normal) * (bonesPositions[i] - bonesPositions[i - 1]) + bonesPositions[i - 1];
                 }
             }
 
@@ -249,14 +273,15 @@ public class FabricIK : MonoBehaviour
                     bones[i].rotation = Quaternion.FromToRotation(startingBoneDirectionToNext[i], bonesPositions[i + 1] - bonesPositions[i]) * startingBoneRotation[i];
                 bones[i].position = bonesPositions[i];
             }
-
         }
+        
 
         // Finally, we set back bonesPositions to the actual transforms (positions) of the bones in the chain.
         for (int i = 0; i < bonesPositions.Length; i++)
         {
             bones[i].position = bonesPositions[i];
         }
+
     }
 
     /// <summary>

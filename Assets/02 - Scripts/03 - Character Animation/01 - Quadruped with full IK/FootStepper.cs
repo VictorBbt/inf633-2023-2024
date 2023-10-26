@@ -48,11 +48,11 @@ public class FootStepper : MonoBehaviour
 
         // START TODO ###################
 
-        // float distFromHome = ...
-        // float angleFromHome = ...
+        float distFromHome = (this.transform.position - homeTransform.position).magnitude;
+        float angleFromHome = Quaternion.Angle(this.transform.rotation, homeTransform.rotation);
 
         // Change condition!
-        if (false)
+        if ((distFromHome > distanceThreshold) || (angleFromHome >= angleThreshold))
         {
             // END TODO ###################
 
@@ -63,7 +63,7 @@ public class FootStepper : MonoBehaviour
                 // The foot rotation will be defined by:
                 // Forward direction: Forward normalized vector of home, but projected on the same plane where the grounded position was detected.
                 // Upward direction: Normal of the plane where the grounded position was detected.
-                Quaternion endRot = Quaternion.LookRotation(Vector3.ProjectOnPlane(homeTransform.forward, endNormal), endNormal);
+                Quaternion endRot = Quaternion.LookRotation(Vector3.ProjectOnPlane(homeTransform.forward, endNormal), endNormal); // So that we put the foot that corresponds to the slope of the terrain
 
                 // Start MoveFoot coroutine with the target position, rotation and duration of the movement.
                 StartCoroutine(MoveFoot(endPos, endRot, moveDuration));
@@ -102,14 +102,17 @@ public class FootStepper : MonoBehaviour
          */
 
         // START TODO ###################
-
-        // Vector3 raycastOrigin = ...
-
-        // if (Physics.Raycast(...))
-        // {
-        //  ...
-        //  return true;
-        // }
+        Vector3 VerticalDisplacement = new Vector3(0, 10, 0);
+        Vector3 raycastOrigin = homeTransform.position  + overshootVector + VerticalDisplacement;
+        RaycastHit hit;
+        Vector3 Down = new Vector3(0, -100, 0);
+        //Debug.DrawRay(raycastOrigin, Down);
+        if (Physics.Raycast(raycastOrigin,Down, out hit, Mathf.Infinity, groundRaycastMask))
+        {
+            endPos = hit.point;
+            endNormal = hit.normal;
+            return true;
+        }
 
         // END TODO ###################
 
@@ -162,9 +165,13 @@ public class FootStepper : MonoBehaviour
              */
 
             // START TODO ###################
+            float liftFoot = 0.3f;
+            Vector3 Control1 = startPos + (endPos - startPos) / 2; // Middle of the movement of the foot
+            Control1.y += liftFoot;
 
-            // transform.position = ...
-
+            // Formula ofquadratic bezier curve Bezier curve
+            transform.position = Mathf.Pow((1 - normalizedTime), 2) * startPos + 2 * (1 - normalizedTime) * normalizedTime * Control1 + Mathf.Pow(normalizedTime, 2) * endPos;
+            
             // END TODO ###################
 
             /*
@@ -173,7 +180,7 @@ public class FootStepper : MonoBehaviour
 
             // START TODO ###################
 
-            // transform.rotation = ...
+             transform.rotation = Quaternion.Slerp(startRot, endRot, normalizedTime);
 
             // END TODO ###################
 

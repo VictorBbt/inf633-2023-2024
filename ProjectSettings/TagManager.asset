@@ -6,6 +6,8 @@ TagManager:
   tags:
   - SecondCamera
   - Ground
+  - Food
+  - Animal
   layers:
   - Default
   - TransparentFX

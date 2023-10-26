@@ -13,6 +13,8 @@ public class Animal : MonoBehaviour
     public float swapStrength = 10.0f;
     public float mutateStrength = 0.5f;
     public float maxAngle = 10.0f;
+    public Vector2 speed = new Vector2(1.0f, 1.0f);
+    public float maxSpeed = 5.0f;
 
     [Header("Energy parameters")]
     public float maxEnergy = 10.0f;
@@ -73,21 +75,28 @@ public class Animal : MonoBehaviour
         }
 
         // Retrieve animal location in the heighmap
-        int dx = (int)((tfm.position.x / terrainSize.x) * detailSize.x);
-        int dy = (int)((tfm.position.z / terrainSize.y) * detailSize.y);
+        int dx = (int)((speed.x * tfm.position.x / terrainSize.x) * detailSize.x);
+        int dy = (int)((speed.y * tfm.position.z / terrainSize.y) * detailSize.y);
 
         // For each frame, we lose lossEnergy
-        energy -= lossEnergy;
+        
+        float speedFactor = speed.magnitude / maxSpeed;
+        energy -= lossEnergy*speedFactor;
 
         // If the animal is located in the dimensions of the terrain and over a grass position (details[dy, dx] > 0), it eats it, gain energy and spawn an offspring.
         if ((dx >= 0) && dx < (details.GetLength(1)) && (dy >= 0) && (dy < details.GetLength(0)) && details[dy, dx] > 0)
         {
             // Eat (remove) the grass and gain energy.
             details[dy, dx] = 0;
+
+
             energy += gainEnergy;
             if (energy > maxEnergy)
+            {
                 energy = maxEnergy;
-
+                speed = new Vector2(speed.x + 1, speed.y + 1);
+            }
+               
             genetic_algo.addOffspring(this);
         }
 
@@ -118,15 +127,17 @@ public class Animal : MonoBehaviour
     /// </summary>
     private void UpdateVision()
     {
+        stepAngle = 1 + stepAngle * (1 - speed.magnitude / maxSpeed);
         float startingAngle = -((float)nEyes / 2.0f) * stepAngle;
         Vector2 ratio = detailSize / terrainSize;
-
+        bool hasFoundFood = false;
         for (int i = 0; i < nEyes; i++)
         {
             Quaternion rotAnimal = tfm.rotation * Quaternion.Euler(0.0f, startingAngle + (stepAngle * i), 0.0f);
             Vector3 forwardAnimal = rotAnimal * Vector3.forward;
             float sx = tfm.position.x * ratio.x;
             float sy = tfm.position.z * ratio.y;
+
             vision[i] = 1.0f;
 
             // Interate over vision length.
@@ -135,7 +146,7 @@ public class Animal : MonoBehaviour
                 // Position where we are looking at.
                 float px = (sx + (distance * forwardAnimal.x * ratio.x));
                 float py = (sy + (distance * forwardAnimal.z * ratio.y));
-
+                
                 if (px < 0)
                     px += detailSize.x;
                 else if (px >= detailSize.x)
@@ -147,11 +158,23 @@ public class Animal : MonoBehaviour
 
                 if ((int)px >= 0 && (int)px < details.GetLength(1) && (int)py >= 0 && (int)py < details.GetLength(0) && details[(int)py, (int)px] > 0)
                 {
+                    if (!hasFoundFood)
+                    {
+                        speed = new Vector2(speed.x + 0.1f, speed.y + 0.1f);
+                        hasFoundFood = true;
+                    }
+                    
                     vision[i] = distance / maxVision;
+                    Debug.DrawRay(tfm.position, new Vector3(px, terrain.getInterp(px, py), py) - tfm.position);
                     break;
                 }
             }
+            if (!(hasFoundFood))
+            {
+                speed = new Vector2(1.0f, 1.0f);
+            }
         }
+        hasFoundFood = false;
     }
 
     public void Setup(CustomTerrain ct, GeneticAlgo ga)

@@ -7,8 +7,8 @@ public abstract class InstanceBrush : Brush {
     private int prefab_idx;
 
     public override void callDraw(float x, float z) {
-        if (terrain.object_prefab)
-            prefab_idx = terrain.registerPrefab(terrain.object_prefab);
+        if (terrain.object_prefab.Length > 0)
+            prefab_idx = 0;
         else {
             prefab_idx = -1;
             terrain.debug.text = "No prefab to instantiate";
