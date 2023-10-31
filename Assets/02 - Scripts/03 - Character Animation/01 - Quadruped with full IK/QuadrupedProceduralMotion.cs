@@ -174,8 +174,9 @@ public class QuadrupedProceduralMotion : MonoBehaviour
 
         // START TODO ###################
 
-         hips.position = posHit - headBone.position + hips.position + new Vector3(0f, 0.4f, 0f);
-        hips.rotation = Quaternion.Slerp(hips.rotation, Quaternion.FromToRotation(hips.up, normalTerrain) *hips.rotation,0.1f);
+         hips.position = posHit - headBone.position + hips.position + new Vector3(0f, 0.6f, 0f);
+        //Vector3 InterpNormal = (normalTerrain + hips.up) / 2f;
+        hips.rotation = Quaternion.Slerp(hips.rotation, Quaternion.FromToRotation(hips.up, normalTerrain) * hips.rotation, 0.3f);
 
         // END TODO ###################
     }
@@ -208,7 +209,7 @@ public class QuadrupedProceduralMotion : MonoBehaviour
 
         for (int i = 0; i < tailBones.Length; i++)
         {
-            // Convert to Euler and apply the rotation my multiplying to the current local quaternion.
+            // Convert to Euler and apply the rotation by multiplying to the current local quaternion.
             Quaternion rotation = Quaternion.Euler(0, tailRotation, 0);
             tailBones[i].localRotation = rotation * tailHomeLocalRotation[i];
         }
@@ -237,10 +238,12 @@ public class QuadrupedProceduralMotion : MonoBehaviour
         // START TODO ###################
 
         goalWorldLookDir = goal.transform.position - headBone.transform.position;
+        Debug.DrawRay(headBone.transform.position, goalWorldLookDir);
         goalLocalLookDir = headBone.parent.InverseTransformDirection(goalWorldLookDir);
-
-        //Quaternion targetLocalRotation = Quaternion.LookRotation(Vector3.RotateTowards(headBone.forward, goalLocalLookDir, speedHead, angleHeadLimit)) ;
-        Quaternion targetLocalRotation = Quaternion.identity;
+        headBone.forward = Vector3.RotateTowards(headBone.forward, goalLocalLookDir, speedHead, angleHeadLimit);
+        //Quaternion targetLocalRotation = Quaternion.LookRotation(Vector3.RotateTowards(headBone.forward, goalLocalLookDir, speedHead, angleHeadLimit))
+        Quaternion targetLocalRotation = Quaternion.LookRotation(goalLocalLookDir);
+        //Quaternion targetLocalRotation = Quaternion.identity;
         // END TODO ###################
 
         /* 

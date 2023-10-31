@@ -6,85 +6,207 @@ using System.Linq;
 
 public class TextureBrush : TerrainBrush {
 
-	//const int textureSize = Terrain.activeTerrain.terrainData.;
-	const TextureFormat textureFormat = TextureFormat.RGB565;
-	const int textureSize = 512;
-	public CustomLayer[] Terrainlayers;
+    public AdditionalLayerSettings[] additionalLayerSettings;
+    public bool GrassAndCliffSteepness = true;
+    public Vector3 sunDirection;
 
-	Terrain active;
-	TerrainData data;
-	private int amap_width;
-	private int amap_height;
-	float[,,] splatMapData;
-	float minHeight;
-	float maxHeight;
-	Vector3 gridSize;
+    private float minHeight;
+    private float maxHeight;
 
-    private void Start()
-    {
-        // Active terrain
-        active = Terrain.activeTerrain;
-        data = active.terrainData;
-        amap_width = data.alphamapWidth;
-        amap_height = data.alphamapHeight;
-        splatMapData = new float[amap_width, amap_height, Terrainlayers.Count()];
-		// Custom terrain
-
-
-	}
-
+    int layerCount;
     public override void draw(int x, int z)
-	{
-		Start();
-		minHeight = terrain.getMinHeight();
-		maxHeight = terrain.getMaxHeight();
-		terrain.GetComponent<Renderer>().sharedMaterial.SetFloat("minHeight", minHeight);
-        terrain.GetComponent<Renderer>().sharedMaterial.SetFloat("maxHeight", maxHeight);
-		
-        ApplyToMaterial(terrain.GetComponent<Renderer>().sharedMaterial);
-	}
-
-	Texture2DArray GenerateTextureArray(Texture2D[] textures)
-	{
-		Texture2DArray textureArray = new Texture2DArray(textureSize, textureSize, textures.Length, textureFormat, true);
-		for (int i = 0; i < textures.Length; i++)
-		{
-			textureArray.SetPixels(textures[i].GetPixels(), i);
-		}
-		textureArray.Apply();
-		return textureArray;
-	}
-
-	public void ApplyToMaterial(Material material)
-	{
-		Debug.Log("Entered");
-		material.SetInt("layerCount", Terrainlayers.Length);
-        material.SetColorArray("baseColours", Terrainlayers.Select(x => x.tint).ToArray());
-        material.SetFloatArray("baseStartHeights", Terrainlayers.Select(x => x.startHeight).ToArray());
-        material.SetFloatArray("baseBlends", Terrainlayers.Select(x => x.blendStrength).ToArray());
-        material.SetFloatArray("baseColourStrength", Terrainlayers.Select(x => x.tintStrength).ToArray());
-        material.SetFloatArray("baseTextureScales", Terrainlayers.Select(x => x.textureScale).ToArray());
-        Texture2DArray texturesArray = GenerateTextureArray(Terrainlayers.Select(x => x.texture).ToArray());
-        material.SetTexture("baseTextures", texturesArray);
-	}
-
-	float getNormalizedHeight(float y, float min, float max)
     {
-		return (y - min) / (max - min);
+        // Get the attached terrain component
+        Terrain terrainA = Terrain.activeTerrain;
+
+        // Get a reference to the terrain data
+        TerrainData terrainData = terrainA.terrainData;
+        layerCount = terrainData.alphamapLayers;
+
+        // Splatmap data is stored internally as a 3d array of floats, so declare a new empty array ready for your custom splatmap data:
+        float[,,] splatmapData = new float[terrainData.alphamapWidth, terrainData.alphamapHeight, layerCount];
+
+        minHeight = terrain.getMinHeight();
+        maxHeight = terrain.getMaxHeight();
+        for (int y = 0; y < terrainData.alphamapHeight; y++)
+        {
+            for (int q = 0; q < terrainData.alphamapWidth; q++)
+            {
+
+                // Normalise q/y coordinates to range 0-1 
+                float y_01 = (float)y / (float)terrainData.alphamapHeight;
+                float q_01 = (float)q / (float)terrainData.alphamapWidth;
+
+                // Get the coordinates for the heightMap
+                float xH = Mathf.RoundToInt(y_01 * terrainData.heightmapResolution);
+                float zH = Mathf.RoundToInt(q_01 * terrainData.heightmapResolution);
+
+                // Sample the height at this location (note GetHeight expects int coordinates corresponding to locations in the heightmap array)
+                float height = terrain.get(xH, zH);
+                float normalizedHeight = InverseLerp(minHeight, maxHeight, height); // Normalize the height to be coherent with the thresholds
+
+                // Calculate the normal of the terrain (note this is in normalised coordinates relative to the overall terrain dimensions)
+                Vector3 normal = terrain.getNormal(xH, zH);
+
+                // Calculate the steepness of the terrain
+                float steepness = terrain.getSteepness(xH, zH);
+
+                // Setup an array to record the mix of texture weights at this point
+                float[] splatWeights = new float[layerCount];
+                for (int i = 0; i < splatWeights.Length; i++) { splatWeights[i] = 0; } // init to 0
+
+                // Creating array based on the feature on additionalLayreSettings
+                float[] startHeights = additionalLayerSettings.Select(x => x.startHeight).ToArray();
+                float[] blendStrengths = additionalLayerSettings.Select(x => x.blendStrength).ToArray();
+
+                // SET CUSTOM RULES
+
+                // 1. Blending based on heights
+                for (int i = 0; i < layerCount - 1; i++)
+                {
+                    // if normalizedHeight is too big, we clamp it
+                    float drawStrength = LinearBlending(i, normalizedHeight, startHeights[i], startHeights[i + 1], blendStrengths[i]);
+                    splatWeights[i] = drawStrength;
+                }
+                // Setting up last layer
+                splatWeights[layerCount - 1] = LinearBlending(layerCount - 1, normalizedHeight, startHeights[layerCount - 1], maxHeight, blendStrengths[layerCount - 1]);
+                /* TEST ONLY
+                for (int i = 0; i < 2; i++) 
+                {
+                    // if normalizedHeight is too big, we clamp it
+                    float textureWeight = LinearBlending(i, normalizedHeight, startHeights[i], startHeights[i + 1], blendStrengths[i]);
+                    splatWeights[i] = textureWeight;
+                }
+
+                splatWeights[2] = LinearBlending(2, normalizedHeight, startHeights[2], maxHeight, blendStrengths[2]);
+                terrain.debug.text = y.ToString()+ ' ' + q.ToString() + ' ' +splatWeights[0].ToString() + ' ' + splatWeights[1].ToString() + ' ' + splatWeights[2].ToString();
+                */
+
+                //// 2. Taking steepness into account
+                //    // texture[2] Grass stronger on flatter terrain
+                //    // Note "steepness" is unbounded, so we "normalise" it by dividing by the extent of heightmap height and scale factor
+                //    // Subtract result from 1.0 to give greater weighting to flat surfaces //splatWeights[3] = height * Mathf.Clamp01(normal.z);
+                if (GrassAndCliffSteepness)
+                {
+                    if ((normalizedHeight > startHeights[2]) && (normalizedHeight < startHeights[4])) // We are on a hill
+                    {
+                        splatWeights[2] += 0.2f * (1 - InverseLerp(0f, 90f, steepness)); // Steepness is around 0 and 90 on the Terrain class, so we interpolate and add greater weight if steepness is low, while saturating at 0.2
+                    }
+
+                    if (normalizedHeight > startHeights[5])// We are on a mountain
+                    {
+                        splatWeights[3] += 0.2f * InverseLerp(0f, 90f, steepness); // Cliffs are more present if it is very steep
+                    }
+                }
+
+                //// 3. Higher weight for grass and snow on surfaces facing positive sunDirection axis
+                //        // i.e. if the pixel is in the shadow
+                if(sunDirection != Vector3.zero)
+                {
+                    if ((normalizedHeight > startHeights[2]) && (normalizedHeight < startHeights[4])) // We are on a hill
+                    {
+                        splatWeights[2] += 0.3f*Mathf.Clamp01(Vector3.Dot(normal, sunDirection));
+                    }
+                    if (normalizedHeight > startHeights[4]) // We are on a mountain
+                    {
+                        splatWeights[layerCount-1] += 0.3f*Mathf.Clamp01(Vector3.Dot(normal, sunDirection));
+                    }
+                }
+
+                // Sum of all textures weights must add to 1, so calculate normalization factor from sum of weights
+                float s = splatWeights.Sum();
+                if (s == 0)
+                {
+                    splatWeights[0] = 1;
+                }
+
+                // Loop through each terrain texture
+                for (int i = 0; i < layerCount; i++)
+                {
+
+                    // Normalize so that sum of all texture weights = 1
+                    splatWeights[i] /= s;
+
+                    // Assign this point to the splatmap array
+                    splatmapData[q, y, i] = splatWeights[i];
+                }
+
+                }
+            }
+            // Finally assign the new splatmap to the terrainData:
+            terrainData.SetAlphamaps(0, 0, splatmapData);
+        }
+
+    private float InverseLerp(float min, float max, float val)
+    {
+        return Mathf.Clamp01((val - min) / (max - min));
+    }
+
+    private float LinearBlending(int index, float h, float startHi, float startHNexti, float BlendRate)
+    {
+        if (BlendRate == 0) // No blending, we return 1 within the zone and 0 elsewhere
+        {
+            if ((h > startHi) && (h < startHNexti))
+            {
+                return 1f;
+            }
+            else { return 0f; }
+        }
+
+        else
+        {
+            if (index == 0) // we start at height 0
+            {
+                if (startHNexti != 0f)
+                {
+                    float a = (BlendRate - 1) / startHNexti;
+                    return Mathf.Clamp01(1 + a*h);
+                }
+                else
+                {
+                    return 0f;
+                }
+
+            }
+
+            if (index == layerCount)
+            {
+                if(startHi == startHNexti)
+                {
+                    return 0f;
+                } else
+                {
+                    float a = (1 - BlendRate) / (startHNexti - startHi);
+                    float b = 1 - a * startHNexti;
+                    return Mathf.Clamp01(a * h + b);
+                }
+
+            }
+            else
+            {
+                float midZone = (startHi + startHNexti) / 2;
+                if(h <= midZone)
+                {
+                    float a = (1 - BlendRate) / (midZone - startHi);
+                    float b = 1 - a * midZone;
+                    return Mathf.Clamp01(a * h + b);
+                }
+                else
+                {
+                    float a = (BlendRate - 1) / (startHNexti - midZone);
+                    float b = 1 - a * midZone;
+                    return Mathf.Clamp01(a * h + b);
+                }
+            }
+        }
     }
 
     [System.Serializable]
-	public class CustomLayer
-	{
-		public Texture2D texture;
-		public Color tint;
-		[Range(0, 1)]
-		public float tintStrength;
-		[Range(0, 1)]
-		public float startHeight;
-		[Range(0, 1)]
-		public float blendStrength;
-		public float textureScale;
-	}
-
+    public class AdditionalLayerSettings
+    {
+        [Range(0, 1)]
+        public float startHeight;
+        [Range(0, 0.2f)]
+        public float blendStrength;
+    }
 }

@@ -5,7 +5,7 @@ using UnityEngine;
 public class ErosionBrush : TerrainBrush
 {
 
-    // parameters taken back of the Sebastian Lague GitHub
+    // parameters taken from the Sebastian Lague GitHub
     // https://github.com/SebLague/Hydraulic-Erosion/tree/master/Assets/Scripts
     public bool GlobalErosion = false; // whether to erode within the brush radius or on all the terrain
     [Range(2,8)]

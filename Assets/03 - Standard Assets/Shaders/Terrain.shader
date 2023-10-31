@@ -2,7 +2,8 @@ Shader "Custom/Terrain"
 {
     Properties
     {
-
+		testTexture("Texture", 2D) = "white"{}
+		testScale("Scale", Float) = 1
     }
     SubShader
     {
@@ -40,6 +41,19 @@ Shader "Custom/Terrain"
 
         };
 
+		float inverseLerp(float a, float b, float value) {
+			return saturate((value-a)/(b-a));
+		}
+
+		float3 triplanar(float3 worldPos, float scale, float3 blendAxes, int textureIndex) {
+			// Avoi having wrong mappings on terrain that are too steep or too flat, by combining the projection of the texture on each ax.
+			float3 scaledWorldPos = worldPos / scale;
+			float3 xProjection = UNITY_SAMPLE_TEX2DARRAY(baseTextures, float3(scaledWorldPos.y, scaledWorldPos.z, textureIndex)) * blendAxes.x;
+			float3 yProjection = UNITY_SAMPLE_TEX2DARRAY(baseTextures, float3(scaledWorldPos.x, scaledWorldPos.z, textureIndex)) * blendAxes.y;
+			float3 zProjection = UNITY_SAMPLE_TEX2DARRAY(baseTextures, float3(scaledWorldPos.x, scaledWorldPos.y, textureIndex)) * blendAxes.z;
+			return xProjection + yProjection + zProjection;
+		}
+
         // Add instancing support for this shader. You need to check 'Enable Instancing' on materials that use the shader.
         // See https://docs.unity3d.com/Manual/GPUInstancing.html for more information about instancing.
         // #pragma instancing_options assumeuniformscaling
@@ -49,9 +63,20 @@ Shader "Custom/Terrain"
 
         void surf (Input IN, inout SurfaceOutputStandard o)
         {
-            float3 scaledWorldPos = IN.worldPos/100;
-            float3 xProjection = UNITY_SAMPLE_TEX2DARRAY(baseTextures, float3(scaledWorldPos.x, scaledWorldPos.z, 0));
-            o.Albedo =xProjection;
+			float heightPercent = inverseLerp(minHeight,maxHeight, IN.worldPos.y); // Normalized Height on the terrain
+			float3 blendAxes = abs(IN.worldNormal); 
+			blendAxes /= blendAxes.x + blendAxes.y + blendAxes.z; // Normalizing the projection of the normal
+
+			for (int i = 0; i < layerCount; i ++) {
+				// Smoothly interpolating a texture on a span of blendStrength[i]
+				float drawStrength = inverseLerp(-baseBlends[i]/2 - epsilon, baseBlends[i]/2, heightPercent - baseStartHeights[i]);
+				// Setting how strong we want the colour to be under the texture
+				float3 baseColour = baseColours[i] * baseColourStrength[i];
+				// Texture mapping with triplanar method, weighted by the colourStrength we used above
+				float3 textureColour = triplanar(IN.worldPos, baseTextureScales[i], blendAxes, i) * (1-baseColourStrength[i]);
+
+				// We add this first element so that when setting drawStrength to O, we keep the original colour 
+				o.Albedo = o.Albedo * (1-drawStrength) + (baseColour+textureColour) * drawStrength;
         }
         ENDCG
     }

@@ -5,7 +5,7 @@ using System;
 
 public class LayeredPerlinBrush : TerrainBrush
 {
-
+    [Header("Perlin Noise Parameters")]
     public float InitialScale = 6f;
     public float InitialAmplitude = 30f;
     public float Persistence = 0.4f;

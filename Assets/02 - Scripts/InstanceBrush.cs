@@ -4,10 +4,10 @@ using UnityEngine;
 
 public abstract class InstanceBrush : Brush {
 
+    private GameObject[] object_prefab = new GameObject[5];
     private int prefab_idx;
-
     public override void callDraw(float x, float z) {
-        if (terrain.object_prefab.Length > 0)
+        if (terrain.PrefabParameters.Length > 0)
             prefab_idx = 0;
         else {
             prefab_idx = -1;
@@ -26,8 +26,8 @@ public abstract class InstanceBrush : Brush {
         if (prefab_idx == -1) {
             return;
         }
-        float scale_diff = Mathf.Abs(terrain.max_scale - terrain.min_scale);
-        float scale_min = Mathf.Min(terrain.max_scale, terrain.min_scale);
+        float scale_diff = Mathf.Abs(terrain.PrefabParameters[0].max_scale - terrain.PrefabParameters[0].min_scale);
+        float scale_min = Mathf.Min(terrain.PrefabParameters[0].max_scale, terrain.PrefabParameters[0].min_scale);
         float scale = (float)CustomTerrain.rnd.NextDouble() * scale_diff + scale_min;
         terrain.spawnObject(terrain.getInterp3(x, z), scale, prefab_idx);
     }

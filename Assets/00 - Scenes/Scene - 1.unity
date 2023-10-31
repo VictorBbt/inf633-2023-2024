@@ -552,7 +552,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 0, y: 1.3419088e+13, z: 1.83672e-40, w: 0}
+  m_BoundingSphereOverride: {x: 1e-45, y: 0, z: 0, w: 0}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
@@ -572,12 +572,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 32, y: -78, z: -25}
---- !u!1 &223894165 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6733265589692463594, guid: b8a4860b06bc8b44fa2e523916edd3dd,
-    type: 3}
-  m_PrefabInstance: {fileID: 6733265589871223679}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &223894168 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6733265589692463591, guid: b8a4860b06bc8b44fa2e523916edd3dd,
@@ -694,12 +688,13 @@ GameObject:
   - component: {fileID: 374040429}
   - component: {fileID: 374040428}
   - component: {fileID: 374040427}
-  - component: {fileID: 374040460}
   - component: {fileID: 374040430}
   - component: {fileID: 374040440}
   - component: {fileID: 374040457}
-  - component: {fileID: 374040431}
+  - component: {fileID: 374040460}
+  - component: {fileID: 374040464}
   - component: {fileID: 374040441}
+  - component: {fileID: 374040431}
   - component: {fileID: 374040442}
   - component: {fileID: 374040443}
   - component: {fileID: 374040444}
@@ -712,10 +707,13 @@ GameObject:
   - component: {fileID: 374040456}
   - component: {fileID: 374040455}
   - component: {fileID: 374040435}
-  - component: {fileID: 374040459}
   - component: {fileID: 374040452}
   - component: {fileID: 374040453}
   - component: {fileID: 374040454}
+  - component: {fileID: 374040459}
+  - component: {fileID: 374040458}
+  - component: {fileID: 374040461}
+  - component: {fileID: 374040462}
   m_Layer: 0
   m_Name: Terrain
   m_TagString: Ground
@@ -796,16 +794,134 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   debug: {fileID: 1822113349}
-  brush_radius: 10
-  object_prefab:
-  - {fileID: 1494354687}
-  - {fileID: 100000, guid: f5df519d22979c248a77eadf5651b327, type: 3}
-  - {fileID: 100016, guid: 469edab27ab6d004d84af2c4a851bd7f, type: 3}
-  - {fileID: 100000, guid: 6aab193b7693b5e4c9741f1917d2987c, type: 3}
-  - {fileID: 100000, guid: c91c1eb85782d5748ace27eb4d7415bb, type: 3}
-  - {fileID: 1000011143488790, guid: a649302f8407dd9469e2c5b67b4a0674, type: 3}
-  min_scale: 0.8
-  max_scale: 1.2
+  brush_radius: 1
+  PrefabParameters:
+  - CorrespondingPrefab: {fileID: 1000012968262300, guid: 30b99e7dc1382e346a7f9789de00de5e,
+      type: 3}
+    prefab_idx: 0
+    minHeight: 0.078
+    maxHeight: 0.11
+    minSteepness: 0
+    maxSteepness: 90
+    min_scale: 0.4
+    max_scale: 1.4
+  - CorrespondingPrefab: {fileID: 100016, guid: 469edab27ab6d004d84af2c4a851bd7f,
+      type: 3}
+    prefab_idx: 1
+    minHeight: 0.114
+    maxHeight: 0.267
+    minSteepness: 0
+    maxSteepness: 45.6
+    min_scale: 0.4
+    max_scale: 1.4
+  - CorrespondingPrefab: {fileID: 1000010869019282, guid: d7ba4fe833670a140b9b6085652f0e26,
+      type: 3}
+    prefab_idx: 2
+    minHeight: 0.552
+    maxHeight: 1
+    minSteepness: 10.5
+    maxSteepness: 79.8
+    min_scale: 0.4
+    max_scale: 1.4
+  - CorrespondingPrefab: {fileID: 117866680507355168, guid: 1d346702b2107531e939003fb256261b,
+      type: 3}
+    prefab_idx: 3
+    minHeight: 0.11
+    maxHeight: 0.26
+    minSteepness: 0
+    maxSteepness: 30
+    min_scale: 0.4
+    max_scale: 1.4
+  - CorrespondingPrefab: {fileID: 3898220539956852897, guid: 488c1b23b5470bb4986ad7d362420766,
+      type: 3}
+    prefab_idx: 4
+    minHeight: 0.11
+    maxHeight: 0.26
+    minSteepness: 0
+    maxSteepness: 30
+    min_scale: 0.4
+    max_scale: 1.4
+  - CorrespondingPrefab: {fileID: 569803505543558402, guid: 67d3abe897c93a08e9593b0a183f2bb4,
+      type: 3}
+    prefab_idx: 5
+    minHeight: 0.11
+    maxHeight: 0.26
+    minSteepness: 0
+    maxSteepness: 30
+    min_scale: 0.4
+    max_scale: 1.4
+  - CorrespondingPrefab: {fileID: 2683874816178851636, guid: 261441bc3708ec7aa8a2c288c3fab3ef,
+      type: 3}
+    prefab_idx: 6
+    minHeight: 0.11
+    maxHeight: 0.26
+    minSteepness: 0
+    maxSteepness: 30
+    min_scale: 0.4
+    max_scale: 1.4
+  - CorrespondingPrefab: {fileID: 3800764132345832870, guid: f6208658c4d45bf5c944dd7806489932,
+      type: 3}
+    prefab_idx: 7
+    minHeight: 0.11
+    maxHeight: 0.26
+    minSteepness: 0
+    maxSteepness: 30
+    min_scale: 0.4
+    max_scale: 1.4
+  - CorrespondingPrefab: {fileID: 4936680397356055064, guid: 9d642dd3a2ff904da90e9417ae5cddec,
+      type: 3}
+    prefab_idx: 8
+    minHeight: 0.11
+    maxHeight: 0.26
+    minSteepness: 0
+    maxSteepness: 30
+    min_scale: 0.4
+    max_scale: 1.4
+  - CorrespondingPrefab: {fileID: 1405983033647363507, guid: 411d79dbbe4633332bf08419508ecdd1,
+      type: 3}
+    prefab_idx: 9
+    minHeight: 0.15
+    maxHeight: 0.3
+    minSteepness: 0
+    maxSteepness: 60
+    min_scale: 0.4
+    max_scale: 1.4
+  - CorrespondingPrefab: {fileID: 7087245949609137404, guid: 6a8478d973ae3ac75a084871ef5cbffb,
+      type: 3}
+    prefab_idx: 10
+    minHeight: 0.15
+    maxHeight: 0.3
+    minSteepness: 0
+    maxSteepness: 60
+    min_scale: 0.4
+    max_scale: 1.4
+  - CorrespondingPrefab: {fileID: 7987437740116969698, guid: 23af1a39b0c5720b898eb5eefad5a1b7,
+      type: 3}
+    prefab_idx: 11
+    minHeight: 0.15
+    maxHeight: 0.3
+    minSteepness: 0
+    maxSteepness: 60
+    min_scale: 0.4
+    max_scale: 1.4
+  - CorrespondingPrefab: {fileID: 3361794247648481284, guid: 18ea0683a7392d274905c95e8ec4544b,
+      type: 3}
+    prefab_idx: 12
+    minHeight: 0.15
+    maxHeight: 0.3
+    minSteepness: 0
+    maxSteepness: 60
+    min_scale: 0.4
+    max_scale: 1.4
+  - CorrespondingPrefab: {fileID: 4294171559252262822, guid: 783170933d5c442f2a2ab32f0fb0502a,
+      type: 3}
+    prefab_idx: 13
+    minHeight: 0.15
+    maxHeight: 0.3
+    minSteepness: 0
+    maxSteepness: 60
+    min_scale: 0.4
+    max_scale: 1.4
   cam: {fileID: 534669904}
 --- !u!114 &374040431
 MonoBehaviour:
@@ -840,14 +956,25 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 374040426}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 58addec6626ef40dfb932e8efbbb6236, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   popSize: 100
-  animalPrefab: {fileID: 223894165}
+  AnimalParameters:
+  - animalPrefab: {fileID: 6733265589692463594, guid: b8a4860b06bc8b44fa2e523916edd3dd,
+      type: 3}
+    animal_index: 0
+    minHeight: 0.109
+    maxHeight: 0.4
+    minSteepness: 0
+    maxSteepness: 45
   vegetationGrowthRate: 1
+  minFoodHeightThreshold: 0.036
+  maxFoodHeightThreshold: 0.409
+  minFoodSteepnessThreshold: 0
+  maxFoodSteepnessThreshold: 60
   currentGrowth: 0
 --- !u!114 &374040441
 MonoBehaviour:
@@ -957,7 +1084,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 374040426}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c9ddf09a2548e4bf990a9ec2ee8f32ed, type: 3}
   m_Name: 
@@ -1038,7 +1165,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 374040426}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9c2aa25d3cbd24f0391ad6c24445555e, type: 3}
   m_Name: 
@@ -1111,6 +1238,21 @@ MonoBehaviour:
   NumberOfPeaks: 1
   flattenValleys: 1
   TerraceHeight: 3
+--- !u!114 &374040458
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 374040426}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5fd04cde61c1844f58616eaeec9a044d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  flatThreshold: 0
+  littleSteepThreshold: 0
+  verySteepThreshold: 0
 --- !u!114 &374040459
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1118,16 +1260,15 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 374040426}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: adabbfd1d03d54dad9653814991c53dd, type: 3}
+  m_Script: {fileID: 11500000, guid: 7ae3ceb1078ef45a9ac2f472158f22c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   sandyRockHeightThreshold: 0
-  bigTreeHeightThreshold: 0
-  littleTreeRocksHeightThreshold: 0
-  treeSteepnessThreshold: 0
-  bushSteepnessThreshold: 0
+  coniferThreshold: 0
+  TreeRocksHeightThreshold: 0
+  mountainRocksHeightThreshold: 0
 --- !u!114 &374040460
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1140,6 +1281,59 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ef1880cba6b7e40e184a9d4846dca4b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  additionalLayerSettings: []
+  GrassAndCliffSteepness: 1
+  sunDirection: {x: 0, y: 0, z: 0}
+--- !u!114 &374040461
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 374040426}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6c678f16947f459f9cbdf29ffc6714a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  NumberOfObjects: 
+--- !u!114 &374040462
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 374040426}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 001b50acd24fb46a58cee3972d86436f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  CorrespondingIndex: 0
+  minFreeDistance: 0
+--- !u!114 &374040464
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 374040426}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4f2264bffe514462802393cccc8afe5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  DryFamilyTreeIndexes: 
+  MoistFamilyTreeIndexes: 
+  minFreeDistance: 0
+  InitialScale: 6
+  InitialAmplitude: 10
+  Persistence: 0.4
+  Octaves: 9
+  Lacunarity: 1.92
+  OffsetX: 500
+  OffsetZ: 500
+  flattenValleys: 1
 --- !u!1 &534669902
 GameObject:
   m_ObjectHideFlags: 0
@@ -1309,7 +1503,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 609556146}
-  m_LocalRotation: {x: 0.07881488, y: 0.48020637, z: -0.04337663, w: 0.87253}
+  m_LocalRotation: {x: 0.07881488, y: 0.48020634, z: -0.043376625, w: 0.87253}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -1778,7 +1972,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1090240002}
-  m_LocalRotation: {x: 0.07881489, y: 0.48020637, z: -0.043376636, w: 0.8725299}
+  m_LocalRotation: {x: 0.078814894, y: 0.48020637, z: -0.043376636, w: 0.87253}
   m_LocalPosition: {x: 5.7758684, y: 2.5, z: 7.3247967}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -1829,12 +2023,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 13
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1494354687 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 8294753647683989644, guid: da9c81a5f6f274b848f42a2d0705157b,
-    type: 3}
-  m_PrefabInstance: {fileID: 961350160}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1525859051
 GameObject:
   m_ObjectHideFlags: 0
@@ -1925,7 +2113,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1525859051}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 266.96, y: 1.68, z: 70.7}
+  m_LocalPosition: {x: 296.08, y: 8.39, z: 56.01}
   m_LocalScale: {x: 0.56965, y: 0.56965, z: 0.56965}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2695,12 +2883,12 @@ PrefabInstance:
     - target: {fileID: 2954251903139554733, guid: 292e0cc1c13240549bc0ea73726cca30,
         type: 3}
       propertyPath: m_TranslationOffsets.Array.data[0].y
-      value: -0.645556
+      value: -0.6455555
       objectReference: {fileID: 0}
     - target: {fileID: 2954251903139554733, guid: 292e0cc1c13240549bc0ea73726cca30,
         type: 3}
       propertyPath: m_TranslationOffsets.Array.data[0].z
-      value: 0.054771423
+      value: 0.05476761
       objectReference: {fileID: 0}
     - target: {fileID: 2954251903497124950, guid: 292e0cc1c13240549bc0ea73726cca30,
         type: 3}
@@ -2735,7 +2923,7 @@ PrefabInstance:
     - target: {fileID: 2954251903923410748, guid: 292e0cc1c13240549bc0ea73726cca30,
         type: 3}
       propertyPath: m_TranslationOffsets.Array.data[0].y
-      value: -0.45629692
+      value: -0.4562974
       objectReference: {fileID: 0}
     - target: {fileID: 2954251903923410748, guid: 292e0cc1c13240549bc0ea73726cca30,
         type: 3}
@@ -2770,7 +2958,7 @@ PrefabInstance:
     - target: {fileID: 2954251904142021965, guid: 292e0cc1c13240549bc0ea73726cca30,
         type: 3}
       propertyPath: m_TranslationOffsets.Array.data[0].z
-      value: -1.6437454
+      value: -1.6437492
       objectReference: {fileID: 0}
     - target: {fileID: 2954251904179557875, guid: 292e0cc1c13240549bc0ea73726cca30,
         type: 3}
@@ -2785,12 +2973,12 @@ PrefabInstance:
     - target: {fileID: 2954251904250419958, guid: 292e0cc1c13240549bc0ea73726cca30,
         type: 3}
       propertyPath: m_TranslationOffsets.Array.data[0].y
-      value: -0.645556
+      value: -0.6455555
       objectReference: {fileID: 0}
     - target: {fileID: 2954251904250419958, guid: 292e0cc1c13240549bc0ea73726cca30,
         type: 3}
       propertyPath: m_TranslationOffsets.Array.data[0].z
-      value: 0.054771423
+      value: 0.05476761
       objectReference: {fileID: 0}
     - target: {fileID: 2954251904389719722, guid: 292e0cc1c13240549bc0ea73726cca30,
         type: 3}
@@ -2835,17 +3023,17 @@ PrefabInstance:
     - target: {fileID: 8107060311549103610, guid: 292e0cc1c13240549bc0ea73726cca30,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 257
+      value: 286.56
       objectReference: {fileID: 0}
     - target: {fileID: 8107060311549103610, guid: 292e0cc1c13240549bc0ea73726cca30,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.15
+      value: 6.47
       objectReference: {fileID: 0}
     - target: {fileID: 8107060311549103610, guid: 292e0cc1c13240549bc0ea73726cca30,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 57.4
+      value: 42.94
       objectReference: {fileID: 0}
     - target: {fileID: 8107060311549103610, guid: 292e0cc1c13240549bc0ea73726cca30,
         type: 3}

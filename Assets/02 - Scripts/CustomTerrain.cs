@@ -13,9 +13,8 @@ public class CustomTerrain : MonoBehaviour {
     public int brush_radius = 10;
 
     [Header("Instance brush attributes")]
-    public GameObject[] object_prefab = new GameObject[5];
-    public float min_scale = 0.8f;
-    public float max_scale = 1.2f;
+    public PrefabSettings[] PrefabParameters;
+
 
     private Brush current_brush;
 
@@ -26,7 +25,6 @@ public class CustomTerrain : MonoBehaviour {
     private int heightmap_width;
     private int heightmap_height;
     private float[,] heightmap_data;
-    public float[,] moisture_data;
     private int amap_width, amap_height;
     private int detail_width, detail_height;
     private int[,] detail_layer = null;
@@ -48,7 +46,6 @@ public class CustomTerrain : MonoBehaviour {
         heightmap_width = terrain_data.heightmapResolution;
         heightmap_height = terrain_data.heightmapResolution;
         heightmap_data = terrain_data.GetHeights(0, 0, heightmap_width, heightmap_height);
-        moisture_data = new float[heightmap_width, heightmap_height];
         current_brush = null;
         highlight_go = GameObject.Find("Cursor Highlight");
         highlight_proj = highlight_go.GetComponent<Projector>();
@@ -91,7 +88,7 @@ public class CustomTerrain : MonoBehaviour {
             hit_loc = hit.point;
             if (current_brush)
                 do_draw_target = true;
-            if (Input.GetMouseButton(0)) {
+            if (Input.GetMouseButtonDown(0)) {
                 debug.text = "Coords: " + hit_loc.ToString();
                 if (current_brush)
                     current_brush.callDraw(hit_loc.x, hit_loc.z);
@@ -120,7 +117,7 @@ public class CustomTerrain : MonoBehaviour {
 
         TreePrototype proto = new TreePrototype();
         proto.bendFactor = 0.0f;
-        proto.prefab = object_prefab[0];
+        proto.prefab = PrefabParameters[0].CorrespondingPrefab;
         List<TreePrototype> protos = new List<TreePrototype>(terrain_data.treePrototypes);
         protos.Add(proto);
         terrain_data.treePrototypes = protos.ToArray();
@@ -155,14 +152,10 @@ public class CustomTerrain : MonoBehaviour {
         return terrain_data.GetSteepness(x / heightmap_width,
                                          z / heightmap_height);
     }
-    public Vector3 getNormal(float x, float z) {
+    public Vector3 getNormal(float x, float z)
+    {
         return terrain_data.GetInterpolatedNormal(x / heightmap_width,
                                                   z / heightmap_height);
-    }
-
-    public float getMoisture(int x, int z)
-    {
-        return moisture_data[x, z]; 
     }
 
     // Set the grid height for a node
@@ -317,5 +310,84 @@ public class CustomTerrain : MonoBehaviour {
         }
         return minHeight;
     }
+
+
+    public int[,] getZone(int index, float x, float z)
+    {
+        int[,] zone = new int[(int)gridSize().x, (int)gridSize().z];
+        float y = InverseLerp(getMinHeight(), getMaxHeight(), getInterp(x, z));
+        float steep = getSteepness(x, z);
+        float minH = PrefabParameters[index].minHeight;
+        float maxH = PrefabParameters[index].maxHeight;
+        float minS = PrefabParameters[index].minSteepness;
+        float maxS = PrefabParameters[index].maxSteepness;
+        if((y > minH) && (y<maxH) && (steep > minS) && (steep < maxS))
+        {
+            zone[(int)x, (int)z] = 1;
+        } else { zone[(int)x, (int)z] = 0; }
+
+        return zone;
+    }
+
+    public int[,] getAllZones()
+    {
+
+        float minTerrainH = getMinHeight();
+        float maxTerrainH = getMaxHeight();
+        int[,] zone = new int[(int)gridSize().x, (int)gridSize().z];
+        for (int x = 0; x < (int)gridSize().x; x++)
+        {
+            for (int z = 0; z < (int)gridSize().z; z++)
+            {
+                zone[x, z] = -1;
+            }
+        }
+
+        for (int x=0; x< (int)gridSize().x; x++)
+        {
+            for (int z = 0; z < (int)gridSize().z; z++)
+            {
+                for (int i = 0; i < PrefabParameters.Length; i++)
+                {
+                    float y =InverseLerp(minTerrainH, maxTerrainH, getInterp(x, z));
+                    float steep = getSteepness(x, z);
+                    float minH = PrefabParameters[i].minHeight;
+                    float maxH = PrefabParameters[i].maxHeight;
+                    float minS = PrefabParameters[i].minSteepness;
+                    float maxS = PrefabParameters[i].maxSteepness;
+                    if ((y >= minH) && (y <= maxH) && (steep >= minS) && (steep <= maxS))
+                    {
+                        zone[x, z] = i;
+                    }
+                }
+            }
+        }
+
+        return zone;
+
+    }
+
+    private float InverseLerp(float min, float max, float val)
+    {
+        return Mathf.Clamp01((val - min) / (max - min));
+    }
+
+    [System.Serializable]
+    public class PrefabSettings
+    {
+        public GameObject CorrespondingPrefab;
+        public int prefab_idx;
+        [Range(0, 1)]
+        public float minHeight;
+        [Range(0, 1)]
+        public float maxHeight;
+        [Range(0, 90f)]
+        public float minSteepness;
+        [Range(0, 90f)]
+        public float maxSteepness;
+        public float min_scale = 0.8f;
+        public float max_scale = 1.2f;
+    }
+
 
 }

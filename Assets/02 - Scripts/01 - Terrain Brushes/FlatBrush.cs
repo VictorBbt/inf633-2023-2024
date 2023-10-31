@@ -5,7 +5,7 @@ using UnityEngine;
 public class FlatBrush : TerrainBrush {
 
     public override void draw(int x, int z) {
-
+        
         terrain.debug.text = isInMap(x,z).ToString();
         for (int zi = -radius; zi <= radius; zi++) {
             for (int xi = -radius; xi <= radius; xi++) {

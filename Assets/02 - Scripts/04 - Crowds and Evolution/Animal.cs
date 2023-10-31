@@ -97,7 +97,7 @@ public class Animal : MonoBehaviour
                 speed = new Vector2(speed.x + 1, speed.y + 1);
             }
                
-            genetic_algo.addOffspring(this);
+            genetic_algo.addOffspring(this, 0);
         }
 
         // If the energy is below 0, the animal dies.
@@ -130,14 +130,13 @@ public class Animal : MonoBehaviour
         stepAngle = 1 + stepAngle * (1 - speed.magnitude / maxSpeed);
         float startingAngle = -((float)nEyes / 2.0f) * stepAngle;
         Vector2 ratio = detailSize / terrainSize;
-        bool hasFoundFood = false;
         for (int i = 0; i < nEyes; i++)
         {
             Quaternion rotAnimal = tfm.rotation * Quaternion.Euler(0.0f, startingAngle + (stepAngle * i), 0.0f);
             Vector3 forwardAnimal = rotAnimal * Vector3.forward;
             float sx = tfm.position.x * ratio.x;
             float sy = tfm.position.z * ratio.y;
-
+            
             vision[i] = 1.0f;
 
             // Interate over vision length.
@@ -146,7 +145,8 @@ public class Animal : MonoBehaviour
                 // Position where we are looking at.
                 float px = (sx + (distance * forwardAnimal.x * ratio.x));
                 float py = (sy + (distance * forwardAnimal.z * ratio.y));
-                
+
+                //Debug.DrawRay(tfm.position, new Vector3(distance * forwardAnimal.x, terrain.getInterp(distance * forwardAnimal.x, distance * forwardAnimal.z), distance * forwardAnimal.z) - tfm.position);
                 if (px < 0)
                     px += detailSize.x;
                 else if (px >= detailSize.x)
@@ -158,23 +158,11 @@ public class Animal : MonoBehaviour
 
                 if ((int)px >= 0 && (int)px < details.GetLength(1) && (int)py >= 0 && (int)py < details.GetLength(0) && details[(int)py, (int)px] > 0)
                 {
-                    if (!hasFoundFood)
-                    {
-                        speed = new Vector2(speed.x + 0.1f, speed.y + 0.1f);
-                        hasFoundFood = true;
-                    }
-                    
                     vision[i] = distance / maxVision;
-                    Debug.DrawRay(tfm.position, new Vector3(px, terrain.getInterp(px, py), py) - tfm.position);
                     break;
                 }
             }
-            if (!(hasFoundFood))
-            {
-                speed = new Vector2(1.0f, 1.0f);
-            }
         }
-        hasFoundFood = false;
     }
 
     public void Setup(CustomTerrain ct, GeneticAlgo ga)
@@ -205,6 +193,11 @@ public class Animal : MonoBehaviour
     public float GetHealth()
     {
         return energy / maxEnergy;
+    }
+
+    private float InverseLerp(float min, float max, float val)
+    {
+        return Mathf.Clamp01((val - min) / (max - min));
     }
 
 }
