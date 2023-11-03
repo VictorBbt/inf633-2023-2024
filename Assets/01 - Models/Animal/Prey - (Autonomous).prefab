@@ -9,12 +9,12 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6733265589692463591}
-  - component: {fileID: 6733265589692463592}
+  - component: {fileID: 1818862387998545808}
   - component: {fileID: 6733265589692463593}
   - component: {fileID: 6433437158357310118}
   m_Layer: 0
-  m_Name: Animal - (Autonomous)
-  m_TagString: Untagged
+  m_Name: Prey - (Autonomous)
+  m_TagString: Prey
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -35,7 +35,7 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6733265589692463592
+--- !u!114 &1818862387998545808
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -44,22 +44,21 @@ MonoBehaviour:
   m_GameObject: {fileID: 6733265589692463594}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2da0cc07004fd40a196e4058316a4276, type: 3}
+  m_Script: {fileID: 11500000, guid: 596cce4241cec4808ad77fac52f2b301, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  swapRate: 0.01
-  mutateRate: 0.01
-  swapStrength: 10
-  mutateStrength: 0.5
-  maxAngle: 10
-  speed: {x: 1, y: 1}
-  maxSpeed: 5
-  maxEnergy: 10
-  lossEnergy: 0.1
-  gainEnergy: 10
-  maxVision: 20
-  stepAngle: 10
-  nEyes: 5
+  settings: {fileID: 11400000, guid: ae1955573bbff423da74a16d59421062, type: 2}
+  position: {x: 0, y: 0, z: 0}
+  forward: {x: 0, y: 0, z: 0}
+  avgFlockHeading: {x: 0, y: 0, z: 0}
+  avgAvoidanceHeading: {x: 0, y: 0, z: 0}
+  centreOfFlockmates: {x: 0, y: 0, z: 0}
+  numPerceivedFlockmates: 0
+  vision: []
+  TargetWeight: 1
+  AlignWeight: 1
+  CohesionWeight: 1
+  SeperateWeight: 1
 --- !u!114 &6733265589692463593
 MonoBehaviour:
   m_ObjectHideFlags: 0

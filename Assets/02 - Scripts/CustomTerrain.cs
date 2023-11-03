@@ -37,7 +37,8 @@ public class CustomTerrain : MonoBehaviour {
     [SerializeField] Camera cam;
 
     // Initialization
-    void Start () {
+    void Start () { //Start
+        //Debug.Log("1 - Retrieve terrain information");
         if (!terrain)
             terrain = Terrain.activeTerrain;
         terrain_collider = terrain.GetComponent<Collider>();
