@@ -139,6 +139,13 @@ public class GeneticAlgo : MonoBehaviour
             computeBoid.SetInt("numBoids", boids.Length);
             computeBoid.SetFloat("viewRadius", settings.perceptionRadius);
             computeBoid.SetFloat("avoidRadius", settings.avoidanceRadius);
+            //computeBoid.SetFloat("maxVisionCos", Mathf.Cos(settings.stepAngle));
+            /* In buffer
+            // float maxVisionCos;
+            // float scalarProduct = dot(normalize(boids[id.x].position), normalize(boidB.direction));
+            // float cosAngle = cos(scalarProduct);
+            // && (scalarProduct > 0) && (cosAngle < maxVisionCos) )
+            */
             int threadGroups = Mathf.CeilToInt(numBoids / (float)threadGroupSize);
             computeBoid.Dispatch(0, threadGroups, 1, 1);
             boidBuffer.GetData(boidData);
@@ -226,6 +233,21 @@ public class GeneticAlgo : MonoBehaviour
         return newPrey;
     }
 
+    public Prey makePreyFromParent(Vector3 position, Quaternion rotation)
+    {
+        if (debug)
+        {
+            Debug.Log("3 - Instantiating Animal in makeAnimal at position: " + position.ToString());
+        }
+        GameObject animal = Instantiate(preyPrefab, transform);
+        Prey newPrey = animal.GetComponent<Prey>();
+        newPrey.transform.position = position;
+        newPrey.Setup(customTerrain, this);
+        SetupCharac(newPrey);
+        newPrey.transform.rotation = rotation;
+        return newPrey;
+    }
+
     public Prey makePrey()
     {
         Vector3 scale = terrain.terrainData.heightmapScale;
@@ -242,7 +264,7 @@ public class GeneticAlgo : MonoBehaviour
             Debug.Log("Parent is spawning a child");
         }
         //Debug.Log("Parent is spawning a child");
-        Prey newPrey = makePrey(parent.transform.position);
+        Prey newPrey = makePreyFromParent(parent.transform.position, parent.transform.rotation);
         newPrey.InheritBrain(parent.GetBrain(), true);
         //newPrey.InitializeChildren(parent);
         preys.Add(newPrey);
@@ -265,7 +287,7 @@ public class GeneticAlgo : MonoBehaviour
         prey.networkStruct = new int[] { settings.nEyes, 5, 1 };
         prey.energy = settings.maxEnergy;
         prey.tfm = prey.transform;
-
+        prey.velocity = prey.tfm.forward * (settings.minSpeed + settings.maxSpeed) / 2;
         // Used by S Lague
         //position = cachedTransform.position;
         //forward = cachedTransform.forward;

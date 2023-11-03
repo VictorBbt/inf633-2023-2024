@@ -17,21 +17,20 @@ MonoBehaviour:
   swapStrength: 10
   mutateStrength: 0.5
   maxAngle: 10
-  minSpeed: 2
-  maxSpeed: 5
-  perceptionRadius: 2.5
-  avoidanceRadius: 1
+  minSpeed: 3
+  maxSpeed: 7
+  perceptionRadius: 20
+  avoidanceRadius: 5
   maxSteerForce: 3
   maxEnergy: 10
-  lossEnergy: 0.1
+  lossEnergy: 0
   gainEnergy: 10
-  energy: 10
   maxVision: 20
   stepAngle: 10
   nEyes: 5
   obstacleMask:
     serializedVersion: 2
-    m_Bits: 0
-  boundsRadius: 0.27
+    m_Bits: 64
+  boundsRadius: 3
   avoidCollisionWeight: 10
-  collisionAvoidDst: 5
+  collisionAvoidDst: 10

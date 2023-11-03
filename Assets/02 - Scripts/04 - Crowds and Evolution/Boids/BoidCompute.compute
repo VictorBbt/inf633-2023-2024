@@ -31,7 +31,6 @@ void CSMain (uint3 id : SV_DispatchThreadID)
                 boids[id.x].flockCentre += boidB.position;
 
                 if (sqrDst < avoidRadius * avoidRadius) {
-
                     boids[id.x].separationHeading -= offset / sqrDst;
                 }
             }

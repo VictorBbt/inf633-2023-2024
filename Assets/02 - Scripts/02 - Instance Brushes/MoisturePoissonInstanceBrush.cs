@@ -94,13 +94,13 @@ public class MoisturePoissonInstanceBrush : InstanceBrush {
         Debug.Log("ZOffset = " + ZOffset.ToString());
 
         float moistureSW = moisture_data[Mathf.Max(0, (int)x), Mathf.Max(0, (int)z)];
-        Debug.Log("Moisture SW = " + moistureSW.ToString());
+        //Debug.Log("Moisture SW = " + moistureSW.ToString());
         float moistureNW = moisture_data[Mathf.Min((int)terrain.gridSize().x, (int)(x + 1)), Mathf.Max(0, (int)z)];
-        Debug.Log("Moisture NW = " + moistureNW.ToString());
+        //Debug.Log("Moisture NW = " + moistureNW.ToString());
         float moistureNE = moisture_data[Mathf.Min((int)terrain.gridSize().x, (int)(x + 1)), Mathf.Min((int)terrain.gridSize().z, (int)(z + 1))];
-        Debug.Log("Moisture NE = " + moistureNE.ToString());
+        //Debug.Log("Moisture NE = " + moistureNE.ToString());
         float moistureSE = moisture_data[Mathf.Max(0, (int)(x)), Mathf.Min((int)terrain.gridSize().z, (int)(z + 1))];
-        Debug.Log("Moisture SE = " + moistureSE.ToString());
+        //Debug.Log("Moisture SE = " + moistureSE.ToString());
         return (1 - XOffset) * (1 - ZOffset) * moistureSW + ZOffset * (1 - XOffset) * moistureNW * XOffset * ZOffset * moistureNE + (1 - ZOffset) * XOffset * moistureSE;
     }
 

@@ -19,10 +19,16 @@ public class CapsuleAutoController : MonoBehaviour {
     }
 
     void Update() {
+        Prey toUpdate = GetComponent<Prey>();
+
         Vector3 scale = terrain.terrainData.heightmapScale;
         Transform tfm = transform;
-        Vector3 v = tfm.rotation * Vector3.forward * max_speed;
-        Vector3 loc = tfm.position + v;
+        //Debug.Log("Position in AutoController: " + tfm.position);
+        Vector3 vTarget = tfm.rotation * Vector3.forward * toUpdate.targetWeight;
+        //Vector3 loc = tfm.position + v;
+
+        Vector3 loc = tfm.position + vTarget +  toUpdate.velocity * Time.deltaTime;
+
         if (loc.x < 0)
             loc.x += width;
         else if (loc.x > width)

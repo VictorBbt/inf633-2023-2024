@@ -14,8 +14,8 @@ public class BoidSettings : ScriptableObject
     public float swapStrength = 10.0f;
     public float mutateStrength = 0.5f;
     public float maxAngle = 10.0f;
-    public float minSpeed = 2;
-    public float maxSpeed = 5;
+    public float minSpeed = 5f; // In Capsule controller, the max speed is 0.5
+    public float maxSpeed = 10f;
     public float perceptionRadius = 2.5f; // Radius where the preys can view their peers
     public float avoidanceRadius = 1;
     public float maxSteerForce = 3;

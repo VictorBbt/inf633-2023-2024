@@ -22,6 +22,7 @@ public class Prey : MonoBehaviour
     public int[] networkStruct;
     protected SimpleNeuralNet brain = null;
 
+
     // Renderer.
     protected Material mat = null;
 
@@ -31,12 +32,11 @@ public class Prey : MonoBehaviour
     //[HideInInspector]
     //public Vector3 forward;
     [HideInInspector]
-    Vector2 velocity; // always a Vector2 because the y component is always terrain.getInterp(float x, float z)
+    public Vector3 velocity; // Vector3 but we will project the direction on the terrain
     [HideInInspector]
     public float energy;
 
     // To update:
-    Vector3 acceleration;
     [HideInInspector]
     public Vector3 avgFlockHeading;
     [HideInInspector]
@@ -57,27 +57,11 @@ public class Prey : MonoBehaviour
     bool debug = false;
 
     // Weights to optimize with NN
-    public float TargetWeight = 1; // Weight that characterizes the force with which the prey will be steered towards the output of its vision sensor
+    public float targetWeight = 1; // Weight that characterizes the force with which the prey will be steered towards the output of its vision sensor
                                        // i.e, how strong it wants to go to eat (he has to learn that when he is hungry, he has to give a
     public float alignWeight = 1;
     public float cohesionWeight = 1;
-    public float separateWeight = 1;
-
-
-    /* Other parameters accessible with the Animal.cs inheritance
-      // Terrain.
-        protected CustomTerrain terrain = null;
-        protected int[,] details = null;
-        protected Vector2 detailSize;
-        protected Vector2 terrainSize;
-      // Genetic alg.
-        protected GeneticAlgo genetic_algo = null;
-      // Brain
-        protected int[] networkStruct;
-        protected SimpleNeuralNet brain = null;
-        // Renderer.
-        private Material mat = null;
-    */
+    public float separateWeight = 2;
 
     void Start()
     {
@@ -90,12 +74,7 @@ public class Prey : MonoBehaviour
         networkStruct = new int[] { settings.nEyes, 5, 1 };
         energy = settings.maxEnergy;
         tfm = transform;
-
-        // Used by S Lague
-        //position = cachedTransform.position;
-        //forward = cachedTransform.forward;
-        //position = tfm.position;
-        //forward = tfm.forward;
+        velocity = tfm.forward * (settings.minSpeed + settings.maxSpeed)/2;
 
         // Renderer used to update animal color.
         // It needs to be updated for more complex models.
@@ -135,26 +114,46 @@ public class Prey : MonoBehaviour
         //TODO ADD BRAIN PREDATORS+ENERGY --> NEW COEFFS FOR TARGET, COHESION, ALIGNMENT, ...
         Vector3 acceleration = Vector3.zero;
 
-        //Offset to target computed with the UpdateVision (we have angle +distance)
+        // 3. Act using actuators - All the forces are normalized and only the weights give them more importance (maybe to change ?)
+        //Debug.Log("Position before moving: " + tfm.position);
 
-        //if (numPerceivedFlockmates != 0)
-        //{
-        //    centreOfFlockmates /= numPerceivedFlockmates;
-
-        //    Vector3 offsetToFlockmatesCentre = (centreOfFlockmates - tfm.position);
-
-        //    Vector3 alignmentForce = SteerTowards(avgFlockHeading) * alignWeight;
-        //    Vector3 cohesionForce = SteerTowards(offsetToFlockmatesCentre) * cohesionWeight;
-        //    Vector3 seperationForce = SteerTowards(avgAvoidanceHeading) * separateWeight;
-
-        //    acceleration += alignmentForce;
-        //    acceleration += cohesionForce;
-        //    acceleration += seperationForce;
-        //}
-
-        // 3. Act using actuators.
+        // Compute angle to go towards food
         float angle = (output[0] * 2.0f - 1.0f) * settings.maxAngle; // How much it turns
-        tfm.Rotate(0.0f, angle, 0.0f); // Change with UpdateBoid()
+        //Debug.Log("Angle: " + angle.ToString());
+        tfm.Rotate(0.0f, angle, 0.0f); // I want to go there if I was alone (not an external force), but the group influences me (as an external force).
+        
+
+        // Add the group influence
+        if (numPerceivedFlockmates != 0)
+        {
+            centreOfFlockmates /= numPerceivedFlockmates;
+
+            Vector3 offsetToFlockmatesCentre = (validTerrainPosition(centreOfFlockmates) - tfm.position);
+
+            Vector3 alignmentForce = SteerTowards(avgFlockHeading) * alignWeight;
+            Vector3 cohesionForce = projectOnPlane(SteerTowards(offsetToFlockmatesCentre) * cohesionWeight); // We want it to be driven only on x and z coordinates, as y is constrained
+            Vector3 separationForce = SteerTowards(avgAvoidanceHeading) * separateWeight;
+
+            acceleration += alignmentForce;
+            acceleration += cohesionForce;
+            acceleration += separationForce;
+        }
+
+        // Collision Avoidance : if possible collision found, find free direction (no NN, fixed weight for collision avoidance)
+        if (IsHeadingForCollision())
+        {
+            Vector3 collisionAvoidDir = AvoidCollisionDir();
+            Vector3 collisionAvoidForce = SteerTowards(collisionAvoidDir) * settings.avoidCollisionWeight;
+            acceleration += collisionAvoidForce;
+        }
+
+        velocity += acceleration * Time.deltaTime;
+        float speed = velocity.magnitude;
+        Vector3 dir = velocity / speed;
+        speed = Mathf.Clamp(speed, settings.minSpeed, settings.maxSpeed);
+        //Debug.Log("Speed: " + speed.ToString());
+        velocity = dir * speed; // then fetched by CapsuleController to update the position of our BOID
+
     }
 
     public bool UpdatePositionAndEnergy()
@@ -245,20 +244,43 @@ public class Prey : MonoBehaviour
                 if ((int)px >= 0 && (int)px < details.GetLength(1) && (int)py >= 0 && (int)py < details.GetLength(0) && details[(int)py, (int)px] > 0)
                 {
                     vision[i] = distance / settings.maxVision;
-                    break;
                 }
             }
         }
     }
 
-    /* Inherited for the moment but might not be (if we have to keep track of predators, preys,...
-    public void Setup(CustomTerrain ct, GeneticAlgo ga)
-    {
-        terrain = ct;
-        genetic_algo = ga;
-        UpdateSetup();
+    // Collisions are not treated as a genetic attribute, if we detect collision, we avoid them witha fixed weight
+    bool IsHeadingForCollision() 
+    { // To change with 2D vision and obstacles 
+        RaycastHit hit;
+        if (Physics.SphereCast(tfm.position, settings.boundsRadius, tfm.forward, out hit, settings.collisionAvoidDst, settings.obstacleMask))
+        {
+            Debug.Log("Obstacle in view");
+            return true;
+        }
+        else { }
+        return false;
     }
-    */
+
+    Vector3 AvoidCollisionDir()
+    {
+        int numDirections = 25;
+        float startAngle = -25f;
+        float stepCollisionAngle = 5f;
+        for(int i =0; i < numDirections; i++)
+        {
+            Quaternion rotAnimal = tfm.rotation * Quaternion.Euler(0.0f, startAngle + (stepCollisionAngle * i), 0.0f);
+            Vector3 lookDirection = rotAnimal * Vector3.forward;
+            Vector3 dir = tfm.TransformDirection(lookDirection);
+            Ray ray = new Ray(tfm.position, dir);
+            if (!Physics.SphereCast(ray, settings.boundsRadius, settings.collisionAvoidDst, settings.obstacleMask))
+            {
+                return dir;
+            }
+        }
+
+        return tfm.forward;
+    }
 
     public void Setup(CustomTerrain ct, GeneticAlgo ga)
     {
@@ -292,10 +314,28 @@ public class Prey : MonoBehaviour
         return brain;
     }
 
-    Vector2 SteerTowards(Vector2 vector)
+    /// <summary>
+    /// y is constrained by the position on x and 
+    /// So we project this Vector on the (x, z) plan, normalize it and multiply it by the distance of the previous Vector3
+    /// </summary>
+    /// <param name="vector"></param>
+    /// <returns></returns>
+    Vector3 SteerTowards(Vector3 vector)
     {
         Vector2 v = vector.normalized * settings.maxSpeed - velocity;
-        return Vector2.ClampMagnitude(v, settings.maxSteerForce);
+        return Vector3.ClampMagnitude(v, settings.maxSteerForce);
+    }
+
+    Vector3 validTerrainPosition(Vector3 vector)
+    {
+        float xCoord = vector.x;
+        float zCoord = vector.z;
+        return new Vector3(xCoord, terrain.getInterp(xCoord, zCoord), zCoord);
+    }
+
+    Vector2 projectOnPlane(Vector3 vector)
+    {
+        return new Vector2(vector.x, vector.z);
     }
 
     // Previous framework
