@@ -45,6 +45,23 @@ public class GeneticAlgo : MonoBehaviour
 
     bool debug = false;
 
+    [HideInInspector]
+    public List<float> targetWeights;
+    [HideInInspector]
+    public List<float> alignWeights;
+    [HideInInspector]
+    public List<float> cohesionWeights;
+    [HideInInspector]
+    public List<float> separateWeights;
+    [HideInInspector]
+    private float meanTargetWeight;
+    [HideInInspector]
+    private float meanAlignWeight;
+    [HideInInspector]
+    private float meanCohesionWeight;
+    [HideInInspector]
+    private float meanSeparateWeight;
+
     void Start()
     {
         // Retrieve terrain.
@@ -122,6 +139,11 @@ public class GeneticAlgo : MonoBehaviour
 
     public void updateBoids()
     {
+        meanTargetWeight = 0f;
+        meanAlignWeight = 0f;
+        meanCohesionWeight =0f;
+        meanSeparateWeight = 0f;
+
         boids = preys.ToArray();
         int numBoids = boids.Length;
         // Compute Buffer approach
@@ -157,9 +179,28 @@ public class GeneticAlgo : MonoBehaviour
                 boids[i].numPerceivedFlockmates = boidData[i].numFlockmates;
 
                 boids[i].UpdateBoid();
+                meanTargetWeight += boids[i].targetWeight;
+                meanAlignWeight += boids[i].alignWeight;
+                meanCohesionWeight += boids[i].cohesionWeight;
+                meanSeparateWeight += boids[i].separateWeight;
             }
             boidBuffer.Release();
         }
+
+        if (debug)
+        {
+            Debug.Log("mean: targetW: " + (meanTargetWeight / numBoids).ToString());
+            Debug.Log("mean alignW: " + (meanAlignWeight / numBoids).ToString());
+            Debug.Log("mean cohesionW: " + (meanCohesionWeight / numBoids).ToString());
+            Debug.Log("mean separateW: " + (meanSeparateWeight / numBoids).ToString());
+            Debug.Log("______________________________________");
+        }
+
+        targetWeights.Add(meanTargetWeight / numBoids);
+        alignWeights.Add(meanAlignWeight / numBoids);
+        cohesionWeights.Add(meanCohesionWeight / numBoids);
+        separateWeights.Add(meanSeparateWeight / numBoids);
+
 
         //for (int id = 0; id < numBoids; id++)
         //{
@@ -265,7 +306,8 @@ public class GeneticAlgo : MonoBehaviour
         }
         //Debug.Log("Parent is spawning a child");
         Prey newPrey = makePreyFromParent(parent.transform.position, parent.transform.rotation);
-        newPrey.InheritBrain(parent.GetBrain(), true);
+        newPrey.InheritFoodBrain(parent.GetFoodBrain(), true);
+        //newPrey.InheritReactionBrain(parent.GetReactionBrain(), true);
         //newPrey.InitializeChildren(parent);
         preys.Add(newPrey);
     }
@@ -283,8 +325,10 @@ public class GeneticAlgo : MonoBehaviour
 
     public void SetupCharac(Prey prey)
     {
-        prey.vision = new float[settings.nEyes];
-        prey.networkStruct = new int[] { settings.nEyes, 5, 1 };
+        prey.foodVision = new float[settings.nEyes];
+        prey.FoodNetworkStruct = new int[] { settings.nEyes, 5, 1 };
+        prey.predVision = new float[settings.nPredEyes + 1];
+        prey.ReactionNetworkStruct = new int[] { settings.nPredEyes+1, 5, 5, 4};
         prey.energy = settings.maxEnergy;
         prey.tfm = prey.transform;
         prey.velocity = prey.tfm.forward * (settings.minSpeed + settings.maxSpeed) / 2;

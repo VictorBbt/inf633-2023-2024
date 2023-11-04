@@ -4,9 +4,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+
+
 public class SimpleNeuralNet
 {
-
     private List<float[,]> allWeights; // Stores the weights of ALL the network, at index 0 --> weights of layer 0, etc...
     private List<float[]> allResults; // Stores the results of all layer, at index 0 --> results of layer 1 ?
 
@@ -30,6 +31,7 @@ public class SimpleNeuralNet
         allResults = new List<float[]>();
         for (int i = 1; i < structure.Length; i++)
         {
+            
             float[,] weights = makeLayer(structure[i - 1], structure[i]); // Init the weights between two layers
             allWeights.Add(weights); 
             float[] results = new float[structure[i]];
@@ -60,7 +62,7 @@ public class SimpleNeuralNet
             float[] ins = input;
             float[] outs = allResults[idxLayer];
             if (idxLayer > 0)
-                ins = allResults[idxLayer - 1]; // input of layer i is output of layer i-1, exept at the beginning
+                ins = allResults[idxLayer - 1]; // input of layer i is output of layer i-1, except at the beginning
 
             for (int idxNeuron = 0; idxNeuron < outs.Length; idxNeuron++) // Go through each neuron of layer i to compute its activation
             {
@@ -75,7 +77,7 @@ public class SimpleNeuralNet
         return allResults[allResults.Count - 1]; // Return final result
     }
 
-    private float transferFunction(float value) // We use the sigmoid, maybe we can change with ReLU (faster computation and don't need to backpropagate
+    private float transferFunction(float value) // We use the sigmoid, maybe we can change with ReLU (faster computation and don't need to backpropagate)
     {
         return 1.0f / (1.0f + Mathf.Exp(-value));
     }

@@ -30,6 +30,11 @@ public class BoidSettings : ScriptableObject
     public float stepAngle = 10.0f;
     public int nEyes = 5;
 
+    [Header("Sensor - Predator Vision")]
+    public LayerMask predatorMask;
+    public float PredStepAngle = 5.0f;
+    public int nPredEyes = 10;
+
     [Header("Collisions")]
     public LayerMask obstacleMask;
     public float boundsRadius = .27f;

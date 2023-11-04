@@ -19,8 +19,10 @@ public class Prey : MonoBehaviour
     protected GeneticAlgo genetic_algo = null;
 
     // Brain
-    public int[] networkStruct;
-    protected SimpleNeuralNet brain = null;
+    public int[] FoodNetworkStruct;
+    public int[] ReactionNetworkStruct;
+    protected SimpleNeuralNet foodBrain = null;
+    protected SimpleNeuralNet reactionBrain = null;
 
 
     // Renderer.
@@ -53,7 +55,8 @@ public class Prey : MonoBehaviour
     //Transform cachedTransform;
     //Material material;
     [HideInInspector]
-    public float[] vision;
+    public float[] foodVision;
+    public float[] predVision;
     bool debug = false;
 
     // Weights to optimize with NN
@@ -70,8 +73,11 @@ public class Prey : MonoBehaviour
             Debug.Log("Start Prey");
         }
         // Network: 1 input per receptor, 1 output per actuator.
-        vision = new float[settings.nEyes];
-        networkStruct = new int[] { settings.nEyes, 5, 1 };
+        foodVision = new float[settings.nEyes];
+        FoodNetworkStruct = new int[] { settings.nEyes, 5, 1 };
+        predVision = new float[settings.nPredEyes+1];
+        ReactionNetworkStruct = new int[] { settings.nPredEyes + 1 , 5, 5, 4 };
+
         energy = settings.maxEnergy;
         tfm = transform;
         velocity = tfm.forward * (settings.minSpeed + settings.maxSpeed)/2;
@@ -90,8 +96,10 @@ public class Prey : MonoBehaviour
             Debug.Log("Update Boid");
         }
         // In case something is not initialized...
-        if (brain == null)
-            brain = new SimpleNeuralNet(networkStruct);
+        if (foodBrain == null)
+            foodBrain = new SimpleNeuralNet(FoodNetworkStruct);
+        if (reactionBrain == null)
+            reactionBrain = new SimpleNeuralNet(ReactionNetworkStruct);
         if (terrain == null)
             return;
         if (details == null)
@@ -105,12 +113,18 @@ public class Prey : MonoBehaviour
             mat.color = Color.white * (energy / settings.maxEnergy);
 
         // 1. Update receptor.
-        UpdateVision();
-        //TODO ADD VISION FOR PREDATORS
+        UpdateFoodVision();
+        UpdatePredatorVision();
         // 2. Use brain for direction to get to reach the target with the vision sensor (for the moment, just spots details (food))
 
-        float[] output = brain.getOutput(vision); // For the moment, the output is a value between 0 and 1
-                                                  //Debug.Log("Output[0]: " +  output[0].ToString());
+        float[] foodOutput = foodBrain.getOutput(foodVision); // For the moment, the output is a value between 0 and 1
+        predVision[predVision.Length - 1] = GetHealth();// We add the sense of hunger to the equation, to choose between go toward food or behave in group
+        float[] reactionOutput = reactionBrain.getOutput(predVision);
+        targetWeight = reactionOutput[0];
+        alignWeight = reactionOutput[1];
+        cohesionWeight = reactionOutput[2];
+        separateWeight = reactionOutput[3];
+
         //TODO ADD BRAIN PREDATORS+ENERGY --> NEW COEFFS FOR TARGET, COHESION, ALIGNMENT, ...
         Vector3 acceleration = Vector3.zero;
 
@@ -118,7 +132,7 @@ public class Prey : MonoBehaviour
         //Debug.Log("Position before moving: " + tfm.position);
 
         // Compute angle to go towards food
-        float angle = (output[0] * 2.0f - 1.0f) * settings.maxAngle; // How much it turns
+        float angle = (foodOutput[0] * 2.0f - 1.0f) * settings.maxAngle; // How much it turns
         //Debug.Log("Angle: " + angle.ToString());
         tfm.Rotate(0.0f, angle, 0.0f); // I want to go there if I was alone (not an external force), but the group influences me (as an external force).
         
@@ -131,7 +145,7 @@ public class Prey : MonoBehaviour
             Vector3 offsetToFlockmatesCentre = (validTerrainPosition(centreOfFlockmates) - tfm.position);
 
             Vector3 alignmentForce = SteerTowards(avgFlockHeading) * alignWeight;
-            Vector3 cohesionForce = projectOnPlane(SteerTowards(offsetToFlockmatesCentre) * cohesionWeight); // We want it to be driven only on x and z coordinates, as y is constrained
+            Vector3 cohesionForce = SteerTowards(offsetToFlockmatesCentre) * cohesionWeight; // We want it to be driven only on x and z coordinates, as y is constrained
             Vector3 separationForce = SteerTowards(avgAvoidanceHeading) * separateWeight;
 
             acceleration += alignmentForce;
@@ -205,7 +219,7 @@ public class Prey : MonoBehaviour
     /// <summary>
     /// Calculate distance to the nearest food resource, if there is any.
     /// </summary>
-    public void UpdateVision()
+    public void UpdateFoodVision()
     {
         float startingAngle = -((float)settings.nEyes / 2.0f) * settings.stepAngle;
         Vector2 ratio = detailSize / terrainSize;
@@ -222,7 +236,7 @@ public class Prey : MonoBehaviour
             float sx = tfm.position.x * ratio.x;
             float sy = tfm.position.z * ratio.y;
 
-            vision[i] = 1.0f;
+            foodVision[i] = 1.0f;
 
             // Interate over vision length.
             for (float distance = 1.0f; distance < settings.maxVision; distance += 0.5f)
@@ -243,15 +257,34 @@ public class Prey : MonoBehaviour
                 // if we are well on a pixel of the terrain, and  there is food
                 if ((int)px >= 0 && (int)px < details.GetLength(1) && (int)py >= 0 && (int)py < details.GetLength(0) && details[(int)py, (int)px] > 0)
                 {
-                    vision[i] = distance / settings.maxVision;
+                    foodVision[i] = distance / settings.maxVision;
                 }
             }
         }
     }
 
+    public void UpdatePredatorVision()
+    {
+        float startingAngle = -((float)settings.nEyes/2f) * settings.stepAngle; // the number of eyes to detect preys is 2 times higher
+
+        for (int i = 0; i < settings.nPredEyes; i++)
+        {
+            Quaternion rotAnimal = tfm.rotation * Quaternion.Euler(0.0f, startingAngle + (settings.stepAngle * i), 0.0f);
+            Vector3 forwardAnimal = rotAnimal * Vector3.forward;
+            predVision[i] = 1;
+
+            RaycastHit hit;
+            if (Physics.Raycast(tfm.position, forwardAnimal, out hit, settings.maxVision, settings.predatorMask))
+            {
+                predVision[i] = hit.distance / settings.maxVision;
+            }
+            //Debug.Log("Predvision[i]: " + predVision[i].ToString());
+        }
+    }
+
     // Collisions are not treated as a genetic attribute, if we detect collision, we avoid them witha fixed weight
     bool IsHeadingForCollision() 
-    { // To change with 2D vision and obstacles 
+    {
         RaycastHit hit;
         if (Physics.SphereCast(tfm.position, settings.boundsRadius, tfm.forward, out hit, settings.collisionAvoidDst, settings.obstacleMask))
         {
@@ -297,11 +330,18 @@ public class Prey : MonoBehaviour
         details = terrain.getDetails();
     }
 
-    public void InheritBrain(SimpleNeuralNet other, bool mutate)
+    public void InheritFoodBrain(SimpleNeuralNet other, bool mutate)
     {
-        brain = new SimpleNeuralNet(other);
+        foodBrain = new SimpleNeuralNet(other);
         if (mutate)
-            brain.mutate(settings.swapRate, settings.mutateRate, settings.swapStrength, settings.mutateStrength);
+            foodBrain.mutate(settings.swapRate, settings.mutateRate, settings.swapStrength, settings.mutateStrength);
+    }
+
+    public void InheritReactionBrain(SimpleNeuralNet other, bool mutate)
+    {
+        foodBrain = new SimpleNeuralNet(other);
+        if (mutate)
+            foodBrain.mutate(settings.swapRate, settings.mutateRate, settings.swapStrength, settings.mutateStrength);
     }
 
     public float GetHealth()
@@ -309,9 +349,14 @@ public class Prey : MonoBehaviour
         return energy / settings.maxEnergy;
     }
 
-    public SimpleNeuralNet GetBrain()
+    public SimpleNeuralNet GetFoodBrain()
     {
-        return brain;
+        return foodBrain;
+    }
+
+    public SimpleNeuralNet GetReactionBrain()
+    {
+        return reactionBrain;
     }
 
     /// <summary>
