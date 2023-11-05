@@ -9,33 +9,30 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 88c7d04f36bb749bf867cdfd7fa27fad, type: 3}
-  m_Name: Settings
+  m_Script: {fileID: 11500000, guid: 1037a4ed09b664d1fbb586263e134842, type: 3}
+  m_Name: PredatorSettings
   m_EditorClassIdentifier: 
-  swapRate: 0.01
-  mutateRate: 0.01
-  swapStrength: 10
-  mutateStrength: 0.5
   maxAngle: 10
-  minSpeed: 3
-  maxSpeed: 7
-  perceptionRadius: 20
-  avoidanceRadius: 5
-  maxSteerForce: 3
-  maxEnergy: 10
-  lossEnergy: 0.1
-  gainEnergy: 10
-  maxVision: 20
-  stepAngle: 10
-  nEyes: 5
+  minSpeed: 0.7
+  maxSpeed: 0.7
+  maxEnergy: 20
+  lossEnergy: 0
+  gainEnergy: 5
+  maxReproduce: 40
+  urgeReproduceRate: 0
+  gainReproduce: 20
   predatorMask:
     serializedVersion: 2
-    m_Bits: 0
-  PredStepAngle: 5
-  nPredEyes: 10
+    m_Bits: 128
+  preyMask:
+    serializedVersion: 2
+    m_Bits: 512
+  maxVision: 30
+  stepAngle: 5
+  nEyes: 20
   obstacleMask:
     serializedVersion: 2
     m_Bits: 64
-  boundsRadius: 0.5
+  boundsRadius: 1.5
   avoidCollisionWeight: 10
   collisionAvoidDst: 7

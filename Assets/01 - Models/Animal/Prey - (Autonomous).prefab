@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 1818862387998545808}
   - component: {fileID: 6733265589692463593}
   - component: {fileID: 6433437158357310118}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Prey - (Autonomous)
   m_TagString: Prey
   m_Icon: {fileID: 0}
@@ -48,17 +48,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   settings: {fileID: 11400000, guid: ae1955573bbff423da74a16d59421062, type: 2}
-  position: {x: 0, y: 0, z: 0}
-  forward: {x: 0, y: 0, z: 0}
+  FoodNetworkStruct: 
+  ReactionNetworkStruct: 
+  velocity: {x: 0, y: 0, z: 0}
+  energy: 0
   avgFlockHeading: {x: 0, y: 0, z: 0}
   avgAvoidanceHeading: {x: 0, y: 0, z: 0}
   centreOfFlockmates: {x: 0, y: 0, z: 0}
   numPerceivedFlockmates: 0
-  vision: []
-  TargetWeight: 1
-  AlignWeight: 1
-  CohesionWeight: 1
-  SeperateWeight: 1
+  tfm: {fileID: 0}
+  foodVision: []
+  predVision: []
+  targetWeight: 1
+  alignWeight: 1
+  cohesionWeight: 1
+  separateWeight: 2
 --- !u!114 &6733265589692463593
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -82,10 +86,10 @@ CapsuleCollider:
   m_Material: {fileID: 0}
   m_IsTrigger: 0
   m_Enabled: 1
-  m_Radius: 0.67278856
-  m_Height: 3.037466
+  m_Radius: 0.57
+  m_Height: 2.15
   m_Direction: 2
-  m_Center: {x: 0.38, y: 0.29009122, z: -0.2611103}
+  m_Center: {x: 0, y: 0.97, z: -0.01}
 --- !u!1 &6733265590630552185
 GameObject:
   m_ObjectHideFlags: 0
@@ -97,9 +101,10 @@ GameObject:
   - component: {fileID: 6733265590630552184}
   - component: {fileID: 6733265590630552181}
   - component: {fileID: 6733265590630552182}
-  m_Layer: 0
+  - component: {fileID: 6759100042831112339}
+  m_Layer: 9
   m_Name: Capsule
-  m_TagString: Untagged
+  m_TagString: Prey
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -169,3 +174,17 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!136 &6759100042831112339
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6733265590630552185}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  m_Radius: 0.57
+  m_Height: 2.0000005
+  m_Direction: 1
+  m_Center: {x: 0, y: 0, z: -0.000000059604645}

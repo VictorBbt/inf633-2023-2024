@@ -10,12 +10,17 @@ public class GeneticAlgo : MonoBehaviour
 
     [Header("Genetic Algorithm parameters")]
     public int preyPopulationSize = 100;
+    public int predatorPopulationSize = 5;
 
     [Header("Prey settings")]
     public GameObject preyPrefab;
-    public BoidSettings settings;
+    public BoidSettings preySettings;
     public ComputeShader computeBoid;
     const int threadGroupSize = 1024;
+
+    [Header("Prey settings")]
+    public GameObject predatorPrefab;
+    public PredatorSettings predSettings;
 
     Prey[] boids;
 
@@ -29,11 +34,14 @@ public class GeneticAlgo : MonoBehaviour
     public float minFoodSteepnessThreshold;
     [Range(0, 90f)]
     public float maxFoodSteepnessThreshold;
+    [HideInInspector]
     public float currentGrowth;
 
     // make this public to get the list of animals in the Boid manager
     [HideInInspector]
     public List<Prey> preys; // Make a list of GameObject List<GameObject>[] where the index is the index of the AnimalParameters, when using the System.Serializable feature
+    [HideInInspector]
+    public List<Predator> predators;
     protected Terrain terrain;
     protected CustomTerrain customTerrain;
     protected float width;
@@ -45,6 +53,10 @@ public class GeneticAlgo : MonoBehaviour
 
     bool debug = false;
 
+    [HideInInspector]
+    public List<int> numPredators;
+    [HideInInspector]
+    public List<int> numPreys;
     [HideInInspector]
     public List<float> targetWeights;
     [HideInInspector]
@@ -77,16 +89,24 @@ public class GeneticAlgo : MonoBehaviour
         if (debug)
         {
             Debug.Log("2 - Spawning " + preyPopulationSize.ToString() + " preys in GeneticAlgo ");
+            Debug.Log("     Spawning " + predatorPopulationSize.ToString() + " predators in GeneticAlgo");
         }
 
         preys = new List<Prey>();
         for (int i = 0; i < preyPopulationSize; i++)
         {
-            Prey p = makePrey();
-            preys.Add(p);
+            Prey prey = makePrey();
+            preys.Add(prey);
             //animal.GetComponent<Prey>().Initialize(Gsettings);
         }
 
+        predators = new List<Predator>();
+        for (int i = 0; i < predatorPopulationSize; i++)
+        {
+            Predator pred = makePredator();
+            predators.Add(pred);
+        }
+        // Maybe in a static class ?
         //possibleGrassCoords = getFoodZone(); // To save computing time, we precompute the possible indexes where grass can appear (coordinates of heightmap)
         //                                     // instead of sampling at random on the terrain and then looking if it is in Zone
         //possiblePreySpawnCoords = getSpawnZone(AnimalParameters[0].animal_index);
@@ -104,8 +124,12 @@ public class GeneticAlgo : MonoBehaviour
         {
             Prey newPrey = makePrey();
             preys.Add(newPrey);
-            
-            //newPrey.Initialize(Gsettings);
+        }
+
+        while (predators.Count < predatorPopulationSize / 2f)
+        {
+            Predator newPred = makePredator();
+            predators.Add(newPred);
         }
 
         // Update grass elements/food resources.
@@ -114,7 +138,16 @@ public class GeneticAlgo : MonoBehaviour
         // Update position of all the boids by computing their relative positions
         updateBoids();
 
-        customTerrain.debug.text = "N? preys: " + preys.Count.ToString();
+        // Update position of all the predators
+            // Predators are updated after boids, so the target can sometimes die by hunger and is reached at the same time by the predator
+        updatePredators();
+
+
+        int numAliveBoids = preys.Count;
+        int numAlivePredators = predators.Count;
+        numPreys.Add(numAliveBoids);
+        numPredators.Add(numAlivePredators);
+        customTerrain.debug.text = "N? preys: " + numAliveBoids.ToString() + " / N? predators: " + numAlivePredators.ToString();
     }
 
     /// <summary>
@@ -159,8 +192,8 @@ public class GeneticAlgo : MonoBehaviour
             boidBuffer.SetData(boidData);
             computeBoid.SetBuffer(0, "boids", boidBuffer);
             computeBoid.SetInt("numBoids", boids.Length);
-            computeBoid.SetFloat("viewRadius", settings.perceptionRadius);
-            computeBoid.SetFloat("avoidRadius", settings.avoidanceRadius);
+            computeBoid.SetFloat("viewRadius", preySettings.perceptionRadius);
+            computeBoid.SetFloat("avoidRadius", preySettings.avoidanceRadius);
             //computeBoid.SetFloat("maxVisionCos", Mathf.Cos(settings.stepAngle));
             /* In buffer
             // float maxVisionCos;
@@ -185,21 +218,29 @@ public class GeneticAlgo : MonoBehaviour
                 meanSeparateWeight += boids[i].separateWeight;
             }
             boidBuffer.Release();
-        }
 
-        if (debug)
-        {
+            if (debug)
+            {
+                Debug.Log("mean: targetW: " + (meanTargetWeight / numBoids).ToString());
+                Debug.Log("mean alignW: " + (meanAlignWeight / numBoids).ToString());
+                Debug.Log("mean cohesionW: " + (meanCohesionWeight / numBoids).ToString());
+                Debug.Log("mean separateW: " + (meanSeparateWeight / numBoids).ToString());
+                Debug.Log("______________________________________");
+            }
+
             Debug.Log("mean: targetW: " + (meanTargetWeight / numBoids).ToString());
             Debug.Log("mean alignW: " + (meanAlignWeight / numBoids).ToString());
             Debug.Log("mean cohesionW: " + (meanCohesionWeight / numBoids).ToString());
             Debug.Log("mean separateW: " + (meanSeparateWeight / numBoids).ToString());
             Debug.Log("______________________________________");
+            targetWeights.Add(meanTargetWeight / numBoids);
+            alignWeights.Add(meanAlignWeight / numBoids);
+            cohesionWeights.Add(meanCohesionWeight / numBoids);
+            separateWeights.Add(meanSeparateWeight / numBoids);
         }
 
-        targetWeights.Add(meanTargetWeight / numBoids);
-        alignWeights.Add(meanAlignWeight / numBoids);
-        cohesionWeights.Add(meanCohesionWeight / numBoids);
-        separateWeights.Add(meanSeparateWeight / numBoids);
+
+
 
 
         //for (int id = 0; id < numBoids; id++)
@@ -248,30 +289,47 @@ public class GeneticAlgo : MonoBehaviour
 
         //No need to do this as boids will be updated at the beginning of the next update
         //Prey[] survivorBoids = boids.Where(item => item != null).ToArray();
+    }
 
-        //if (debug)
-        //{
-        //    Debug.Log("N survivors:" + survivorBoids.Length.ToString());
-        //}
-        
-
-
-
+    public void updatePredators()
+    {
+        for(int i = 0; i<predators.Count; i++)
+        {
+            predators[i].UpdatePredator();
+            predators[i].UpdateReprodAndEnergy();
         }
+    }
 
     public Prey makePrey(Vector3 position)
     {
         if (debug)
         {
-            Debug.Log("3 - Instantiating Animal in makeAnimal at position: " + position.ToString());
+            Debug.Log("3 - Instantiating prey in makePrey at position: " + position.ToString());
+
         }
         GameObject animal = Instantiate(preyPrefab, transform);
         Prey newPrey = animal.GetComponent<Prey>();
         newPrey.transform.position = position;
         newPrey.Setup(customTerrain, this);
-        SetupCharac(newPrey);
+        SetupPreyCharac(newPrey);
         newPrey.transform.Rotate(0.0f, UnityEngine.Random.value * 360.0f, 0.0f);
         return newPrey;
+    }
+
+    public Predator makePredator(Vector3 position)
+    {
+        if (debug)
+        {
+            Debug.Log("3 - Instantiating predator in makePredator at position: " + position.ToString());
+        }
+
+        GameObject animal = Instantiate(predatorPrefab, transform);
+        Predator newPredator = animal.GetComponent<Predator>();
+        newPredator.transform.position = position;
+        newPredator.Setup(customTerrain, this);
+        SetupPredatorCharac(newPredator);
+        newPredator.transform.Rotate(0.0f, UnityEngine.Random.value * 360.0f, 0.0f);
+        return newPredator;
     }
 
     public Prey makePreyFromParent(Vector3 position, Quaternion rotation)
@@ -284,7 +342,7 @@ public class GeneticAlgo : MonoBehaviour
         Prey newPrey = animal.GetComponent<Prey>();
         newPrey.transform.position = position;
         newPrey.Setup(customTerrain, this);
-        SetupCharac(newPrey);
+        SetupPreyCharac(newPrey);
         newPrey.transform.rotation = rotation;
         return newPrey;
     }
@@ -298,22 +356,43 @@ public class GeneticAlgo : MonoBehaviour
         return makePrey(new Vector3(x, y, z));
     }
 
+    public Predator makePredator()
+    {
+        Vector3 scale = terrain.terrainData.heightmapScale;
+        float x = UnityEngine.Random.value * width;
+        float z = UnityEngine.Random.value * height;
+        float y = customTerrain.getInterp(x / scale.x, z / scale.z);
+        return makePredator(new Vector3(x, y, z));
+    }
+
     public void addPreyOffspring(Prey parent)
     {
         if (debug)
         {
-            Debug.Log("Parent is spawning a child");
+            Debug.Log("Parent Prey is spawning a child");
         }
         //Debug.Log("Parent is spawning a child");
         Prey newPrey = makePreyFromParent(parent.transform.position, parent.transform.rotation);
         newPrey.InheritFoodBrain(parent.GetFoodBrain(), true);
-        //newPrey.InheritReactionBrain(parent.GetReactionBrain(), true);
+        newPrey.InheritReactionBrain(parent.GetReactionBrain(), true);
         //newPrey.InitializeChildren(parent);
         preys.Add(newPrey);
     }
 
+    public void addPredatorOffspring(Predator parent)
+    {
+        if (debug)
+        {
+            Debug.Log("Parent Predator is spawning a child");
+        }
+        //Debug.Log("Parent is spawning a child");
+        Predator newPredator = makePredator(parent.transform.position); // Not necessarily the same rotation as in preys
+        predators.Add(newPredator);
+    }
+
     public void removePrey(Prey p)
     {
+        p.willBeDestroyed = true; // Avoid being eaten twice in one Update loop, or create exception
         preys.Remove(p);
         GameObject correspondingObj = p.gameObject;
         Destroy(correspondingObj);
@@ -321,25 +400,45 @@ public class GeneticAlgo : MonoBehaviour
         {
             Debug.Log("Destroyed Prey");
         }
+        Debug.Log("Destroyed Prey");
     }
 
-    public void SetupCharac(Prey prey)
+    public void removePredator(Predator pred)
     {
-        prey.foodVision = new float[settings.nEyes];
-        prey.FoodNetworkStruct = new int[] { settings.nEyes, 5, 1 };
-        prey.predVision = new float[settings.nPredEyes + 1];
-        prey.ReactionNetworkStruct = new int[] { settings.nPredEyes+1, 5, 5, 4};
-        prey.energy = settings.maxEnergy;
+        predators.Remove(pred);
+        GameObject correspondingObj = pred.gameObject;
+        Destroy(correspondingObj);
+        if (debug)
+        {
+            Debug.Log("Destroyed Predator");
+        }
+    }
+
+    public void SetupPreyCharac(Prey prey)
+    {
+        prey.foodVision = new float[preySettings.nEyes];
+        prey.FoodNetworkStruct = new int[] { preySettings.nEyes, 5, 1 };
+        prey.predVision = new float[preySettings.nPredEyes + 1];
+        prey.ReactionNetworkStruct = new int[] { preySettings.nPredEyes+1, 5, 5, 4};
+        prey.energy = preySettings.maxEnergy;
         prey.tfm = prey.transform;
-        prey.velocity = prey.tfm.forward * (settings.minSpeed + settings.maxSpeed) / 2;
-        // Used by S Lague
-        //position = cachedTransform.position;
-        //forward = cachedTransform.forward;
-        //prey.position = prey.tfm.position;
-        //prey.forward = prey.tfm.forward;
+        prey.velocity = prey.tfm.forward * (preySettings.minSpeed + preySettings.maxSpeed) / 2;
+    }
+
+    public void SetupPredatorCharac(Predator predator)
+    {
+        predator.vision = new float[predSettings.nEyes];
+
+        predator.energy = predSettings.maxEnergy;
+        predator.urgeToReproduce = predSettings.maxReproduce;
+
+        predator.tfm = transform;
+        predator.speed = (predSettings.minSpeed + predSettings.maxSpeed) / 2;
+        //predator.velocity = predator.tfm.forward * (predSettings.minSpeed + predSettings.maxSpeed) / 2;
     }
 
 
+    // Setup for ComputeBuffer
     public struct BoidData
     {
         public Vector3 position;

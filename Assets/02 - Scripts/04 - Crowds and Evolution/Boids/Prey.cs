@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-
 public class Prey : MonoBehaviour
 {
     public BoidSettings settings;
@@ -19,9 +18,13 @@ public class Prey : MonoBehaviour
     protected GeneticAlgo genetic_algo = null;
 
     // Brain
+    [HideInInspector]
     public int[] FoodNetworkStruct;
+    [HideInInspector]
     public int[] ReactionNetworkStruct;
+    [HideInInspector]
     protected SimpleNeuralNet foodBrain = null;
+    [HideInInspector]
     protected SimpleNeuralNet reactionBrain = null;
 
 
@@ -56,7 +59,10 @@ public class Prey : MonoBehaviour
     //Material material;
     [HideInInspector]
     public float[] foodVision;
+    [HideInInspector]
     public float[] predVision;
+    [HideInInspector]
+    public bool willBeDestroyed = false; // Used to see if the target of predators that was previously updated are not already destroyed
     bool debug = false;
 
     // Weights to optimize with NN
@@ -115,9 +121,10 @@ public class Prey : MonoBehaviour
         // 1. Update receptor.
         UpdateFoodVision();
         UpdatePredatorVision();
-        // 2. Use brain for direction to get to reach the target with the vision sensor (for the moment, just spots details (food))
+        // 2. Use brain for direction to get to reach the target with the vision sensor, and detect predators + self-hunger to change its behavior
 
-        float[] foodOutput = foodBrain.getOutput(foodVision); // For the moment, the output is a value between 0 and 1
+        float[] foodOutput = foodBrain.getOutput(foodVision);
+
         predVision[predVision.Length - 1] = GetHealth();// We add the sense of hunger to the equation, to choose between go toward food or behave in group
         float[] reactionOutput = reactionBrain.getOutput(predVision);
         targetWeight = reactionOutput[0];
@@ -132,9 +139,9 @@ public class Prey : MonoBehaviour
         //Debug.Log("Position before moving: " + tfm.position);
 
         // Compute angle to go towards food
-        float angle = (foodOutput[0] * 2.0f - 1.0f) * settings.maxAngle; // How much it turns
+        float angle = (foodOutput[0] * 2.0f - 1.0f) * settings.maxAngle; // How much it turns, limited in +-maxAngle
         //Debug.Log("Angle: " + angle.ToString());
-        tfm.Rotate(0.0f, angle, 0.0f); // I want to go there if I was alone (not an external force), but the group influences me (as an external force).
+        tfm.Rotate(0.0f, angle, 0.0f); // I want to go there if I were alone (not an external force), but the group influences me (as an external force).
         
 
         // Add the group influence
@@ -225,9 +232,9 @@ public class Prey : MonoBehaviour
         Vector2 ratio = detailSize / terrainSize;
 
         //Vector3 borderLine = Quaternion.AngleAxis(startingAngle, Vector3.up) * transform.forward;
-        //Debug.DrawRay(transform.position, borderLine*10f);
+        //Debug.DrawRay(transform.position, borderLine * 10f);
         //borderLine = Quaternion.AngleAxis(-startingAngle, Vector3.up) * transform.forward;
-        //Debug.DrawRay(tfm.position, borderLine*10f);
+        //Debug.DrawRay(tfm.position, borderLine * 10f);
 
         for (int i = 0; i < settings.nEyes; i++)
         {
@@ -265,18 +272,32 @@ public class Prey : MonoBehaviour
 
     public void UpdatePredatorVision()
     {
-        float startingAngle = -((float)settings.nEyes/2f) * settings.stepAngle; // the number of eyes to detect preys is 2 times higher
+        float startingAngle = -((float)settings.nPredEyes/2f) * settings.stepAngle; // the number of eyes to detect preys is 2 times higher
+
+        if (debug)
+        {
+            Vector3 borderLine = Quaternion.AngleAxis(startingAngle, Vector3.up) * transform.forward;
+            Debug.DrawRay(transform.position + new Vector3(0f, 1f, 0f), borderLine * settings.maxVision, Color.blue);
+            borderLine = Quaternion.AngleAxis(-startingAngle, Vector3.up) * transform.forward;
+            Debug.DrawRay(tfm.position + new Vector3(0f, 1f, 0f), borderLine * settings.maxVision, Color.blue);
+        }
 
         for (int i = 0; i < settings.nPredEyes; i++)
         {
             Quaternion rotAnimal = tfm.rotation * Quaternion.Euler(0.0f, startingAngle + (settings.stepAngle * i), 0.0f);
             Vector3 forwardAnimal = rotAnimal * Vector3.forward;
+            if (debug)
+            {
+                Debug.DrawRay(tfm.position + new Vector3(0f, 1f, 0f), forwardAnimal * 10f);
+            }
+            
             predVision[i] = 1;
 
             RaycastHit hit;
-            if (Physics.Raycast(tfm.position, forwardAnimal, out hit, settings.maxVision, settings.predatorMask))
+            if (Physics.Raycast(tfm.position + new Vector3(0f, 1f, 0f), forwardAnimal, out hit, settings.maxVision, settings.predatorMask))
             {
                 predVision[i] = hit.distance / settings.maxVision;
+                Debug.Log("Found Predator");
             }
             //Debug.Log("Predvision[i]: " + predVision[i].ToString());
         }
@@ -286,9 +307,12 @@ public class Prey : MonoBehaviour
     bool IsHeadingForCollision() 
     {
         RaycastHit hit;
-        if (Physics.SphereCast(tfm.position, settings.boundsRadius, tfm.forward, out hit, settings.collisionAvoidDst, settings.obstacleMask))
+        if (Physics.SphereCast(tfm.position + new Vector3(0f, 1f, 0f), settings.boundsRadius, tfm.forward, out hit, settings.collisionAvoidDst, settings.obstacleMask))
         {
-            Debug.Log("Obstacle in view");
+            if (debug)
+            {
+                Debug.Log("Obstacle in view");
+            }
             return true;
         }
         else { }
@@ -297,15 +321,15 @@ public class Prey : MonoBehaviour
 
     Vector3 AvoidCollisionDir()
     {
-        int numDirections = 25;
-        float startAngle = -25f;
-        float stepCollisionAngle = 5f;
-        for(int i =0; i < numDirections; i++)
+        int numDirections = 10;
+        float startAngle = -20f;
+        float stepCollisionAngle = 4f;
+        for (int i =0; i < numDirections; i++)
         {
             Quaternion rotAnimal = tfm.rotation * Quaternion.Euler(0.0f, startAngle + (stepCollisionAngle * i), 0.0f);
             Vector3 lookDirection = rotAnimal * Vector3.forward;
             Vector3 dir = tfm.TransformDirection(lookDirection);
-            Ray ray = new Ray(tfm.position, dir);
+            Ray ray = new Ray(tfm.position + new Vector3(0f, 1f, 0f), dir);
             if (!Physics.SphereCast(ray, settings.boundsRadius, settings.collisionAvoidDst, settings.obstacleMask))
             {
                 return dir;
@@ -339,7 +363,7 @@ public class Prey : MonoBehaviour
 
     public void InheritReactionBrain(SimpleNeuralNet other, bool mutate)
     {
-        foodBrain = new SimpleNeuralNet(other);
+        reactionBrain = new SimpleNeuralNet(other);
         if (mutate)
             foodBrain.mutate(settings.swapRate, settings.mutateRate, settings.swapStrength, settings.mutateStrength);
     }
@@ -376,11 +400,6 @@ public class Prey : MonoBehaviour
         float xCoord = vector.x;
         float zCoord = vector.z;
         return new Vector3(xCoord, terrain.getInterp(xCoord, zCoord), zCoord);
-    }
-
-    Vector2 projectOnPlane(Vector3 vector)
-    {
-        return new Vector2(vector.x, vector.z);
     }
 
     // Previous framework
