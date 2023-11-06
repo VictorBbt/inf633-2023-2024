@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
+/// <summary>
+/// Poisson distribution based on Poisson disc sampler
+/// </summary>
 public class PoissonInstanceBrush : InstanceBrush {
 
     public int CorrespondingIndex;

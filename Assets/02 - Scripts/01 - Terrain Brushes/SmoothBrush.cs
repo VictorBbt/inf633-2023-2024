@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
+/// <summary>
+/// Smooth or healing brush
+/// </summary>
 public class SmoothBrush : TerrainBrush {
 
     public float IncreaseHeight = 0;
@@ -19,7 +22,7 @@ public class SmoothBrush : TerrainBrush {
                 if (dist < radius)
                 {
 
-                    // Compute the mean within a range of SmoothingWindow
+                    // Compute the mean within a range of SmoothingWindow (sliding window mean)
                     float mean = 0;
                     float cnt = 0;
                     for (int smX = -SmoothingRadius; smX <= SmoothingRadius; smX++)

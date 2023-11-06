@@ -7,6 +7,7 @@ public class ErosionBrush : TerrainBrush
 
     // parameters taken from the Sebastian Lague GitHub
     // https://github.com/SebLague/Hydraulic-Erosion/tree/master/Assets/Scripts
+
     public bool GlobalErosion = false; // whether to erode within the brush radius or on all the terrain
     [Range(2,8)]
     public int erosionRadius = 3;
@@ -69,16 +70,13 @@ public class ErosionBrush : TerrainBrush
                 float cellOffsetX = posX - nodeX;
                 float cellOffsetZ = posZ - nodeZ;
 
-
-                //terrain.debug.text = "Droplet at " + new Vector2(nodeX, nodeZ).ToString();
                 //Computing the direction of the gradient with nearest point on the grid
                 (float gx, float gz, float height) = getGradient(posX, posZ);
-                //terrain.debug.text = "Gradient is " + grad.ToString();
 
                 // Update the droplet's direction and position (move position 1 unit regardless of speed)
                 dirX = (dirX * inertia - gx * (1 - inertia));
                 dirZ = (dirZ * inertia - gz * (1 - inertia));
-                //terrain.debug.text = "Direction is " + dirX.ToString() + dirZ.ToString();
+
                 // Normalize direction
                 float len = Mathf.Max(0.01f, Mathf.Sqrt(dirX * dirX + dirZ * dirZ));
                 if (len != 0)
@@ -88,13 +86,9 @@ public class ErosionBrush : TerrainBrush
                 }
                 posX += dirX;
                 posZ +=  dirZ;
-                //terrain.debug.text = "dirX: " + dirX.ToString() + "\ndirZ: " + dirZ.ToString();
-                //terrain.debug.text = "Ancient position: (" + (posX -dirX).ToString() + " ," + (posZ - dirZ).ToString() + ") \nNew position (" + posX.ToString() + " ," + posZ.ToString() + ")";
 
                 if ((dirX == 0 && dirZ == 0) || (!isInMap(posX, posZ)))
                 {
-                    //bool t1 = (!(isInMap(nodeX, nodeZ)));
-                    //terrain.debug.text = t1.ToString();
                     break;
                 }
 
@@ -104,8 +98,6 @@ public class ErosionBrush : TerrainBrush
 
                 // Calculate the droplet's sediment capacity (higher when moving fast down a slope and contains lots of water)
                 float sedimentCapacity = Mathf.Max(-deltaHeight * speed * water * sedimentCapacityFactor, minSedimentCapacity);
-
-                //terrain.debug.text = "Computed deltaH: " + deltaHeight.ToString() + "\nsedimentCapa: " + sedimentCapacity.ToString() + "\nsediment" + sediment.ToString();
 
                 // If carrying more sediment than capacity, or if flowing uphill:
                 if (sediment > sedimentCapacity || deltaHeight > 0)
@@ -164,11 +156,8 @@ public class ErosionBrush : TerrainBrush
                     // Clamp the erosion to the change in height so that it doesn't dig a hole in the terrain behind the droplet
                     float amountToErode = Mathf.Min((sedimentCapacity - sediment) * erodeSpeed, -deltaHeight);
 
-                    //terrain.debug.text = "Will erode: " + amountToErode.ToString() + " at center " + new Vector2(nodeX, nodeZ).ToString();
                     // Use erosion brush to erode all nodes inside the droplet's erosion radius
-
                     Vector2 dropletPos = new Vector2(nodeX , nodeZ);
-                    // float normalizationFactor = 3f / (Mathf.PI * 1f * Mathf.Pow(erosionRadius, 2)); //volume of a cone of height 1
                     int cnt = 0;
                     var xList = new List<int>();
                     var zList = new List<int>();
@@ -189,7 +178,6 @@ public class ErosionBrush : TerrainBrush
                                     xList.Add(i);
                                     zList.Add(j);
 
-                                    // We must have a conic distribution of the sediments, so (1 - x/r)
 
                                     // We erode more in the dierction of flow of the droplet
                                     if (((i - posX) * dirX >= 0) && ((j - posZ) * dirZ >= 0))
@@ -215,13 +203,11 @@ public class ErosionBrush : TerrainBrush
                         float xcoord = xList[c];
                         float zcoord = zList[c];
                         float weight = weightList[c];
-
                         float aroundNodeHeight = terrain.get(xcoord, zcoord); // height of the current node
 
                         float weighedErodeAmount = amountToErode * weight/weightSum;
                         float deltaSediment = (aroundNodeHeight < weighedErodeAmount) ? aroundNodeHeight : weighedErodeAmount;
                         terrain.set(xcoord, zcoord, aroundNodeHeight - deltaSediment);
-                        //terrain.debug.text = "Delta sediment: " +  deltaSediment.ToString();
                         sediment += deltaSediment;
                     }
                 }
@@ -243,14 +229,13 @@ public class ErosionBrush : TerrainBrush
                                 terrain.set(nodeX + i, nodeZ + j, aroundNodeHeight - deltaSediment);
                                 //terrain.debug.text = "Delta sediment: " +  deltaSediment.ToString();
                                 sediment += deltaSediment;
-
                             }
                         }
                     }
                     */
 
                     //terrain.debug.text = "Eroded terrain: " + amountToErode.ToString();
-                
+        
                 // Update droplet's speed and water content
                 speed = Mathf.Sqrt(Mathf.Max(0, speed * speed + deltaHeight * gravity));
                 water *= (1 - evaporateSpeed);
@@ -273,14 +258,11 @@ public class ErosionBrush : TerrainBrush
         float heightNE = terrain.get(xnode + 1, znode + 1);
         float heightSE = terrain.get(xnode, znode + 1);
 
-        //terrain.debug.text ="Coord: " + new Vector2(xnode,znode).ToString() + "\nHeight of node SW: " + heightSW.ToString() + "\nHeight of node NW: " + heightNW.ToString() + "\nHeight of node NE: " + heightNE.ToString() + "\nHeight of node SE: " + heightSE.ToString();
         // Calculate droplet's direction of flow with bilinear interpolation of height difference along the edges
         float gradientX = (heightNW - heightSW) * z + (heightNE - heightSE) * (1-z);
         float gradientZ = (heightSE - heightSW) * x + (heightNE - heightNW) *(1 - x);
-        //terrain.debug.text = "GradX: " + gradientX.ToString() + "\nGradZ: " + gradientZ.ToString();
         // Calculate height with bilinear interpolation of the heights of the nodes of the cell
         float height = heightNE* x * z + heightSE * (1-x) * z + heightNW * x* (1-z) + heightSW * (1-x)*(1- z);
-        //terrain.debug.text = "Height of node: " + heightSW.ToString() + "\nInterp height: " + height.ToString();
         return (gradientX, gradientZ, height);
 
     }
@@ -289,7 +271,6 @@ public class ErosionBrush : TerrainBrush
     {
         Vector3 gridSize = terrain.gridSize();
         bool xInRange = (x > erosionRadius) && (x < (float)(gridSize.x) - (float)(erosionRadius));
-        //terrain.debug.text = xInRange.ToString();
         bool zInRange = (z > erosionRadius) && (z < (float)(gridSize.z) - (float)(erosionRadius));
 
         return xInRange && zInRange;

@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 
+/// <summary>
+/// Allows to generate Perlin noise with a specified number of octaves, specified scale/lacunarity/persistency/amplitude
+/// This affects only the terrain locally (within the brush radius)
+/// </summary>
 public class LayeredPerlinBrush : TerrainBrush
 {
     [Header("Perlin Noise Parameters")]
@@ -42,7 +46,6 @@ public class LayeredPerlinBrush : TerrainBrush
                             Amplitude *= Persistence;
                         }
 
-                        //terrain.debug.text = CurrentHeight.ToString();
                         terrain.set(x + xi, z + zi, Mathf.Max(Sum, 0));
                     }
 
@@ -72,7 +75,6 @@ public class LayeredPerlinBrush : TerrainBrush
                             Amplitude *= Persistence;
                         }
 
-                        //terrain.debug.text = CurrentHeight.ToString();
                         terrain.set(x + xi, z + zi, Mathf.Max(Sum, 0));
                     }
                 }
@@ -92,7 +94,6 @@ public class LayeredPerlinBrush : TerrainBrush
     {
         Vector3 gridSize = terrain.gridSize();
         bool xInRange = (x > 0) && (x < (float)(gridSize.x));
-        //terrain.debug.text = xInRange.ToString();
         bool zInRange = (z > 0) && (z < (float)(gridSize.z));
 
         return xInRange && zInRange;

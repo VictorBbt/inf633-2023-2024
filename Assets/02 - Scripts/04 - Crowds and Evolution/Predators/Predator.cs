@@ -6,9 +6,12 @@ using System;
 
 public class Predator : MonoBehaviour
 {
+    // PREDATOR PARAMETERS //
+
+    // Common settings to all predators
     public PredatorSettings settings;
 
-    // Terrain.
+    // Terrain
     protected CustomTerrain terrain = null;
     protected int[,] details = null;
     protected Vector2 detailSize;
@@ -20,23 +23,21 @@ public class Predator : MonoBehaviour
     // Renderer.
     protected Material mat = null;
 
-    //[HideInInspector]
-    //public Vector3 velocity; // Vector3 but we will project the direction on the terrain
+    // Animal features
     [HideInInspector]
     public float speed;
     [HideInInspector]
     public float energy;
     [HideInInspector]
     public float urgeToReproduce;
-
-    // Animal.
     [HideInInspector]
     public Transform tfm;
-
     [HideInInspector]
     public float[] vision;
     [HideInInspector]
     public GameObject target;
+
+    // Debugging, or info
     bool debug = false;
 
 
@@ -46,16 +47,17 @@ public class Predator : MonoBehaviour
         {
             Debug.Log("Start Predator");
         }
-        // Network: 1 input per receptor, 1 output per actuator.
+
+        // Network
         vision = new float[settings.nEyes];
 
+        // Set the initial rates to maximum
         energy = settings.maxEnergy;
         urgeToReproduce = settings.maxReproduce;
 
         tfm = transform;
         speed = (settings.minSpeed + settings.maxSpeed) / 2;
         target = null;
-        //velocity = tfm.forward * (settings.minSpeed + settings.maxSpeed) / 2;
 
         // Renderer used to update animal color.
         // It needs to be updated for more complex models.
@@ -75,7 +77,7 @@ public class Predator : MonoBehaviour
             return;
 
         float healthState = GetHealth();
-        float reproduceState = GetUrgeToReproduce();
+        float reproduceState = Mathf.Clamp(GetUrgeToReproduce(), 0.1f, 1f); //Stops searching for mate if is gonna die
         bool wantToEat = healthState <= reproduceState;
 
         if (debug)
@@ -95,10 +97,10 @@ public class Predator : MonoBehaviour
                 mat.color = Color.blue * reproduceState;
             }
 
-        // 1. Update receptor:  searches for top priority objective --> Maybe NN or search for 2nd priority objective if doesn't find
+
         Vector3 directionToObjective = tfm.forward;
 
-        // If we have a target, we won't go into this
+        // 1. Update Vision        
         if (wantToEat)
         {
             UpdateVision(settings.preyMask); // if wants to eat, only searches for preys
@@ -108,50 +110,48 @@ public class Predator : MonoBehaviour
             UpdateVision(settings.predatorMask); // if wants to mate, only searches for partners
         }
 
+        // 2. Taking a direction
         if(target  != null)
         {
             if(!TestReachedTarget()) // if we are close to the target, we keep going forward, else we go towards the objective
-                directionToObjective = target.transform.position - tfm.position; // We have a target, we follow it
+                directionToObjective = target.transform.position + target.transform.forward - tfm.position; // We have a target, we follow it
         }
         else
         {
-            Quaternion randomRot = Quaternion.Euler(0f, (2f * UnityEngine.Random.value - 1f), 0); //Random rotation between +-30 degrees
+            Quaternion randomRot = Quaternion.Euler(0f, (2f * UnityEngine.Random.value - 1f)*settings.maxAngle, 0); //Random rotation
             directionToObjective = randomRot*tfm.forward;
+            if (wantToEat)
+            {
+                // Linear interpolation of speed: HS=1 : speed = minSpeed (tired), HS=0, speed = maxSpeed (urge to eat)
+                speed = settings.maxSpeed + (settings.minSpeed - settings.maxSpeed) * healthState; // if has eaten, tired so speed is low, else high
+            }
+            else
+            {
+                speed = settings.maxSpeed + (settings.minSpeed - settings.maxSpeed) * reproduceState; // same for reproduction
+            }
         }
 
         if (debug)
         {
-            Debug.DrawRay(tfm.position, directionToObjective * 10, Color.yellow);
+            Debug.DrawRay(tfm.position + new Vector3(0f, 1f, 0f), directionToObjective * 10, Color.yellow);
         }
-        
 
-        // Collision Avoidance : if possible collision found, find free direction, but not changing our target
+        // Collision Avoidance : if possible collision found, find free direction, but not changing the target
         if (IsHeadingForCollision())
         {
             directionToObjective = AvoidCollisionDir();
         }
 
-        // Compute speed
-        if (wantToEat)
-        {
-            // Linear interpolation of speed: HS=1 : speed = minSpeed (tired), HS=0, speed = maxSpeed (urge to eat)
-            speed = settings.maxSpeed + (settings.minSpeed -settings.maxSpeed )* healthState; // if has eaten, tired so speed is low, else high
-        }
-        else
-        {
-            speed = settings.maxSpeed + (settings.minSpeed - settings.maxSpeed) * reproduceState; // same for reproduction
-        }
-
+        // Compute speed if there is no target in view
         speed = Mathf.Clamp(speed, settings.minSpeed, settings.maxSpeed);
         if (debug)
         {
             Debug.Log("Speed = " + speed.ToString());
         }
 
-        //Debug.DrawRay(transform.position, directionToObjective * 10f, Color.red);
         float angle = Vector3.Angle(tfm.forward, directionToObjective);
-        tfm.Rotate(0f, angle, 0f);
-        // then fetched by CapsuleController to update the position of our BOID
+        tfm.Rotate(0f, angle, 0f); // Rotate of the right angle
+        // then fetched by CubeController to update the position of our BOID
     }
 
     public void UpdateReprodAndEnergy()
@@ -179,49 +179,53 @@ public class Predator : MonoBehaviour
     private bool TestReachedTarget()
     {
         // if has encountered an Objective, do the appropriate action
-        // Potential pb: if too much preys, can collide with them and eat them whereas it was not intentional
-        if((tfm.position - target.transform.position).magnitude < 2f)
+        if((tfm.position - target.transform.position).magnitude <= 6f)
         {
             if (debug)
             {
                 Debug.Log("Reached target");
             }
+
             if (target.CompareTag("Prey"))
             {
-                Prey toBeEat = target.gameObject.GetComponent<Prey>();
-                if(toBeEat != null)
+                if (debug)
                 {
-                    if (debug)
-                    {
-                        Debug.Log("Predator Ate Prey");
-                    }
-                    Debug.Log("Attempting eating prey: name " + target.name);
-                    genetic_algo.removePrey(target.gameObject.GetComponent<Prey>());
-                    energy = Mathf.Max(energy + settings.gainEnergy, settings.maxEnergy);
-                    target = null;
-                    Debug.Log("End of the loop for eating");
+                    Debug.Log("Predator Eating Prey");
                 }
+                genetic_algo.removePrey(target.gameObject.GetComponentInParent<Prey>()); // Removing the prey from the simulation
+                energy = Mathf.Min(energy + settings.gainEnergy, settings.maxEnergy); // Gaining energy
+                target = null; 
+           
             }
-            else if (target.CompareTag("Predator")) // Maybe compare IDs if predator collides with itself
+            else if (target.CompareTag("Predator"))
             {
                 if (debug)
                 {
                     Debug.Log("Predator gave birth");
                 }
-                Debug.Log("Predator gave birth");
-                genetic_algo.addPredatorOffspring(this);
-                target.gameObject.GetComponent<Predator>().urgeToReproduce = Mathf.Max(urgeToReproduce + settings.gainReproduce, settings.maxReproduce);
-                urgeToReproduce = Mathf.Max(urgeToReproduce + settings.gainReproduce, settings.maxReproduce);
+                genetic_algo.addPredatorOffspring(this); // Spawn a predator, possible upgrade: give brains to predators and mix them whe reproducing
+                target.gameObject.GetComponentInParent<Predator>().urgeToReproduce = Mathf.Max(urgeToReproduce + settings.gainReproduce, settings.maxReproduce); // Affects the urge to reproduce of the target  also
+                urgeToReproduce = Mathf.Min(urgeToReproduce + settings.gainReproduce, settings.maxReproduce);
                 target = null;
             }
             return true;
+
+        } else if ((tfm.position - target.transform.position).magnitude > settings.maxTrackingDistance)
+        {
+            if (debug)
+            {
+                Debug.Log("Target has escaped and is out of reached - Predator gives up");
+            }
+            target = null;
+            return true;
+
         }
-        return false;
+        return false; // We are still following  the target
     }
 
     public void UpdateVision(LayerMask priorityMask)
     {
-        if(target == null)
+        if(target == null) // Do not look when we have a target
         {
             float startingAngle = -((float)settings.nEyes / 2f) * settings.stepAngle;
 
@@ -233,11 +237,10 @@ public class Predator : MonoBehaviour
                 Debug.DrawRay(tfm.position + new Vector3(0f, 1f, 0f), borderLine * settings.maxVision, Color.yellow);
             }
 
-
             for (int i = 0; i < settings.nEyes; i++)
             {
-                Quaternion rotAnimal = tfm.rotation * Quaternion.Euler(0.0f, startingAngle + (i * settings.stepAngle), 0.0f);
-                Vector3 forwardAnimal = rotAnimal * Vector3.forward;
+                Quaternion rotAnimal = tfm.rotation * Quaternion.Euler(0.0f, startingAngle + (i * settings.stepAngle), 0.0f); 
+                Vector3 forwardAnimal = rotAnimal * Vector3.forward; // Direction  of the ray
 
                 if (debug)
                 {
@@ -247,13 +250,15 @@ public class Predator : MonoBehaviour
                 vision[i] = 0;
 
                 RaycastHit hit;
-                if (Physics.Raycast(tfm.position+new Vector3(0f, 1f, 0f), forwardAnimal, out hit, settings.maxVision, priorityMask))
+                //  Using SphereCast to spot objects
+                if (Physics.SphereCast(tfm.position + new Vector3(0f, 1f, 0f), 1f, forwardAnimal, out hit, settings.maxVision, priorityMask))
                 {
                     if (debug)
                     {
                         Debug.Log("Predator found objective within vision");
                     }
-                    target = hit.collider.gameObject;
+                    target = hit.collider.gameObject; // set target
+                    speed = settings.maxSpeed; // hunting mechanics: speed is max
                 }
             }
         }
@@ -276,7 +281,7 @@ public class Predator : MonoBehaviour
         return false;
     }
 
-    Vector3 AvoidCollisionDir()  // SAME AS PREY
+    Vector3 AvoidCollisionDir()  // SAME AS PREY.CS
     {
         int numDirections = 10;
         float startAngle = -20f;
@@ -296,6 +301,7 @@ public class Predator : MonoBehaviour
         return tfm.forward;
     }
 
+    // Helper functions to avoid non setup features 
     public void Setup(CustomTerrain ct, GeneticAlgo ga)
     {
         terrain = ct;
@@ -309,6 +315,7 @@ public class Predator : MonoBehaviour
         terrainSize = new Vector2(gsz.x, gsz.z);
     }
 
+    // Getters
     public float GetHealth()
     {
         return energy / settings.maxEnergy;

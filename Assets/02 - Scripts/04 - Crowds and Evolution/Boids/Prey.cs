@@ -6,9 +6,12 @@ using UnityEngine.UI;
 
 public class Prey : MonoBehaviour
 {
+    // PREY PARAMETERS //
+
+    // Settings common to all preys
     public BoidSettings settings;
 
-    // Terrain.
+    // Terrain
     protected CustomTerrain terrain = null;
     protected int[,] details = null;
     protected Vector2 detailSize;
@@ -17,7 +20,7 @@ public class Prey : MonoBehaviour
     // Genetic alg.
     protected GeneticAlgo genetic_algo = null;
 
-    // Brain
+    // Brains
     [HideInInspector]
     public int[] FoodNetworkStruct;
     [HideInInspector]
@@ -27,21 +30,10 @@ public class Prey : MonoBehaviour
     [HideInInspector]
     protected SimpleNeuralNet reactionBrain = null;
 
-
     // Renderer.
     protected Material mat = null;
 
-    // State
-    //[HideInInspector]
-    //public Vector3 position;
-    //[HideInInspector]
-    //public Vector3 forward;
-    [HideInInspector]
-    public Vector3 velocity; // Vector3 but we will project the direction on the terrain
-    [HideInInspector]
-    public float energy;
-
-    // To update:
+    // Group information (BOIDS  model)
     [HideInInspector]
     public Vector3 avgFlockHeading;
     [HideInInspector]
@@ -53,17 +45,17 @@ public class Prey : MonoBehaviour
 
     // Animal.
     [HideInInspector]
+    public Vector3 velocity;
+    [HideInInspector]
+    public float energy;
+    [HideInInspector]
     public Transform tfm;
-    // Used by SLague
-    //Transform cachedTransform;
-    //Material material;
     [HideInInspector]
     public float[] foodVision;
     [HideInInspector]
     public float[] predVision;
     [HideInInspector]
-    public bool willBeDestroyed = false; // Used to see if the target of predators that was previously updated are not already destroyed
-    bool debug = false;
+    public bool willBeDestroyed = false; // DEPRECATED: Used to see if the target of predators that was previously updated are not already destroyed
 
     // Weights to optimize with NN
     public float targetWeight = 1; // Weight that characterizes the force with which the prey will be steered towards the output of its vision sensor
@@ -72,18 +64,25 @@ public class Prey : MonoBehaviour
     public float cohesionWeight = 1;
     public float separateWeight = 2;
 
+    // Debugging or  getting information
+    bool debug = false;
+
+
     void Start()
     {
         if (debug)
         {
             Debug.Log("Start Prey");
         }
-        // Network: 1 input per receptor, 1 output per actuator.
+        // Networks
+            // Network 1: vision array --> angle towards the nearest food
         foodVision = new float[settings.nEyes];
         FoodNetworkStruct = new int[] { settings.nEyes, 5, 1 };
+            // Network 2: energy level + vision of predators --> weights to optimize its behaviour (targetWeight, align/cohesion/separate (BOIDS) weights)
         predVision = new float[settings.nPredEyes+1];
         ReactionNetworkStruct = new int[] { settings.nPredEyes + 1 , 5, 5, 4 };
 
+        // Setting initial values
         energy = settings.maxEnergy;
         tfm = transform;
         velocity = tfm.forward * (settings.minSpeed + settings.maxSpeed)/2;
@@ -118,33 +117,32 @@ public class Prey : MonoBehaviour
         if (mat != null)
             mat.color = Color.white * (energy / settings.maxEnergy);
 
-        // 1. Update receptor.
+        // 1. Update receptors
         UpdateFoodVision();
         UpdatePredatorVision();
+
         // 2. Use brain for direction to get to reach the target with the vision sensor, and detect predators + self-hunger to change its behavior
 
         float[] foodOutput = foodBrain.getOutput(foodVision);
 
-        predVision[predVision.Length - 1] = GetHealth();// We add the sense of hunger to the equation, to choose between go toward food or behave in group
+        predVision[predVision.Length - 1] = GetHealth();// We add the sense of hunger to the equation, to choose between go towards food or behave in group
         float[] reactionOutput = reactionBrain.getOutput(predVision);
         targetWeight = reactionOutput[0];
         alignWeight = reactionOutput[1];
         cohesionWeight = reactionOutput[2];
         separateWeight = reactionOutput[3];
 
-        //TODO ADD BRAIN PREDATORS+ENERGY --> NEW COEFFS FOR TARGET, COHESION, ALIGNMENT, ...
+
         Vector3 acceleration = Vector3.zero;
 
-        // 3. Act using actuators - All the forces are normalized and only the weights give them more importance (maybe to change ?)
-        //Debug.Log("Position before moving: " + tfm.position);
+        // 3. Act using actuators - All the forces are normalized and only the weights give them more importance
 
         // Compute angle to go towards food
         float angle = (foodOutput[0] * 2.0f - 1.0f) * settings.maxAngle; // How much it turns, limited in +-maxAngle
-        //Debug.Log("Angle: " + angle.ToString());
-        tfm.Rotate(0.0f, angle, 0.0f); // I want to go there if I were alone (not an external force), but the group influences me (as an external force).
-        
 
-        // Add the group influence
+        tfm.Rotate(0.0f, angle, 0.0f); // I want to go there if I were alone (not an external force), but the group influences me (as an external force).  
+
+        // Add the group influence as external forces= acceleration = sum(external forces) and we will then integrate to have the position
         if (numPerceivedFlockmates != 0)
         {
             centreOfFlockmates /= numPerceivedFlockmates;
@@ -168,12 +166,11 @@ public class Prey : MonoBehaviour
             acceleration += collisionAvoidForce;
         }
 
-        velocity += acceleration * Time.deltaTime;
+        velocity += acceleration * Time.deltaTime; // first intergration of acceleration
         float speed = velocity.magnitude;
         Vector3 dir = velocity / speed;
         speed = Mathf.Clamp(speed, settings.minSpeed, settings.maxSpeed);
-        //Debug.Log("Speed: " + speed.ToString());
-        velocity = dir * speed; // then fetched by CapsuleController to update the position of our BOID
+        velocity = dir * speed; // then fetched by CapsuleController to update the position of our BOID and do 2nd integration
 
     }
 
@@ -189,7 +186,6 @@ public class Prey : MonoBehaviour
         int dy = (int)(( tfm.position.z / terrainSize.y) * detailSize.y);
 
         // For each frame, we lose lossEnergy
-
         energy -= settings.lossEnergy;
 
         // If the animal is located in the dimensions of the terrain and over a grass position (details[dy, dx] > 0), it eats it, gain energy and spawn an offspring.
@@ -198,7 +194,6 @@ public class Prey : MonoBehaviour
             // Eat (remove) the grass and gain energy.
             details[dy, dx] = 0;
 
-
             energy += settings.gainEnergy;
             if (energy > settings.maxEnergy)
             {
@@ -206,7 +201,6 @@ public class Prey : MonoBehaviour
             }
 
             // Spawns a new prey when has eaten grass
-            //Debug.Log("Has eaten");
             genetic_algo.addPreyOffspring(this);
         }
 
@@ -221,8 +215,6 @@ public class Prey : MonoBehaviour
         return true;
     }
 
-
-
     /// <summary>
     /// Calculate distance to the nearest food resource, if there is any.
     /// </summary>
@@ -231,10 +223,12 @@ public class Prey : MonoBehaviour
         float startingAngle = -((float)settings.nEyes / 2.0f) * settings.stepAngle;
         Vector2 ratio = detailSize / terrainSize;
 
-        //Vector3 borderLine = Quaternion.AngleAxis(startingAngle, Vector3.up) * transform.forward;
-        //Debug.DrawRay(transform.position, borderLine * 10f);
-        //borderLine = Quaternion.AngleAxis(-startingAngle, Vector3.up) * transform.forward;
-        //Debug.DrawRay(tfm.position, borderLine * 10f);
+        if (debug) {
+            Vector3 borderLine = Quaternion.AngleAxis(startingAngle, Vector3.up) * transform.forward;
+            Debug.DrawRay(transform.position, borderLine * 10f);
+            borderLine = Quaternion.AngleAxis(-startingAngle, Vector3.up) * transform.forward;
+            Debug.DrawRay(tfm.position, borderLine * 10f);
+        }
 
         for (int i = 0; i < settings.nEyes; i++)
         {
@@ -245,7 +239,7 @@ public class Prey : MonoBehaviour
 
             foodVision[i] = 1.0f;
 
-            // Interate over vision length.
+            // Iterate over vision length.
             for (float distance = 1.0f; distance < settings.maxVision; distance += 0.5f)
             {
                 // Position where we are looking at.
@@ -272,7 +266,7 @@ public class Prey : MonoBehaviour
 
     public void UpdatePredatorVision()
     {
-        float startingAngle = -((float)settings.nPredEyes/2f) * settings.stepAngle; // the number of eyes to detect preys is 2 times higher
+        float startingAngle = -((float)settings.nPredEyes) * settings.stepAngle;
 
         if (debug)
         {
@@ -290,20 +284,22 @@ public class Prey : MonoBehaviour
             {
                 Debug.DrawRay(tfm.position + new Vector3(0f, 1f, 0f), forwardAnimal * 10f);
             }
-            
+            Debug.DrawRay(tfm.position + new Vector3(0f, 1f, 0f), forwardAnimal * 10f);
             predVision[i] = 1;
 
             RaycastHit hit;
-            if (Physics.Raycast(tfm.position + new Vector3(0f, 1f, 0f), forwardAnimal, out hit, settings.maxVision, settings.predatorMask))
+            if (Physics.SphereCast(tfm.position + new Vector3(0f, 1f, 0f),1f,  forwardAnimal, out hit, settings.maxVision, settings.predatorMask))
             {
                 predVision[i] = hit.distance / settings.maxVision;
-                Debug.Log("Found Predator");
+                if (debug)
+                {
+                    Debug.Log("Spotted Predator");
+                }
             }
-            //Debug.Log("Predvision[i]: " + predVision[i].ToString());
         }
     }
 
-    // Collisions are not treated as a genetic attribute, if we detect collision, we avoid them witha fixed weight
+    // Collisions are not treated as a genetic attribute, if we detect collision, we avoid them with a fixed weight
     bool IsHeadingForCollision() 
     {
         RaycastHit hit;
@@ -339,6 +335,8 @@ public class Prey : MonoBehaviour
         return tfm.forward;
     }
 
+
+    // Setup functions
     public void Setup(CustomTerrain ct, GeneticAlgo ga)
     {
         terrain = ct;
@@ -354,6 +352,7 @@ public class Prey : MonoBehaviour
         details = terrain.getDetails();
     }
 
+    // Brain inheritance
     public void InheritFoodBrain(SimpleNeuralNet other, bool mutate)
     {
         foodBrain = new SimpleNeuralNet(other);
@@ -368,6 +367,7 @@ public class Prey : MonoBehaviour
             foodBrain.mutate(settings.swapRate, settings.mutateRate, settings.swapStrength, settings.mutateStrength);
     }
 
+    // Getters
     public float GetHealth()
     {
         return energy / settings.maxEnergy;
@@ -383,12 +383,6 @@ public class Prey : MonoBehaviour
         return reactionBrain;
     }
 
-    /// <summary>
-    /// y is constrained by the position on x and 
-    /// So we project this Vector on the (x, z) plan, normalize it and multiply it by the distance of the previous Vector3
-    /// </summary>
-    /// <param name="vector"></param>
-    /// <returns></returns>
     Vector3 SteerTowards(Vector3 vector)
     {
         Vector2 v = vector.normalized * settings.maxSpeed - velocity;
@@ -402,16 +396,7 @@ public class Prey : MonoBehaviour
         return new Vector3(xCoord, terrain.getInterp(xCoord, zCoord), zCoord);
     }
 
-    // Previous framework
-    //void Awake()
-    //{
-    //    if (debug)
-    //    {
-    //        Debug.Log("4 - Set cached data in Awake Prey");
-    //    }
-    //    material = transform.GetComponentInChildren<MeshRenderer>().material;
-    //    cachedTransform = transform;
-    //}
+    // Previous framework with an Abstract "Animal" Class.
 
     //public void Initialize(BoidSettings Gsettings)
     //{
@@ -466,5 +451,4 @@ public class Prey : MonoBehaviour
     //    if (renderer != null)
     //        mat = renderer.material;
     //}
-
 }

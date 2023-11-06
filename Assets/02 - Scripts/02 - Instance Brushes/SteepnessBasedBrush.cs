@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 
-// Brush learning from example distribution (real-life scenario)
-// Poisson sampling to spawn objects ?
-// Cluster or not ?
+/// <summary>
+/// Brush based on Steepness of the terrain
+/// </summary>
 public class SteepnessBasedBrush : InstanceBrush {
 
 
@@ -24,12 +24,6 @@ public class SteepnessBasedBrush : InstanceBrush {
     [Range(0, 1)]
     public float verySteepThreshold;
 
-    //public int treeSteepnessThreshold; // 40/50 très pentu, 7 quasi rien/ 20/30 colline
-    //public int bushSteepnessThreshold;
-
-
-
-    // store then an array of game object
     public override void draw(float x, float z) {
         float curHeight = terrain.get(x, z);
         float curSteepness = terrain.getSteepness(x, z);

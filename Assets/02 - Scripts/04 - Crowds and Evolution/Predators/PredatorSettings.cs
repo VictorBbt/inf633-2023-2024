@@ -2,12 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Attached to the BOID manager
 [CreateAssetMenu]
 public class PredatorSettings : ScriptableObject
 {
-    // These parameters are defined for each new animal as some can not be implemented for several animals,
-    // and must be changeable from the unity inspector
+
     [Header("Animal parameters")]
     public float maxAngle = 10.0f;
     public float minSpeed = 10f; 
@@ -29,12 +27,13 @@ public class PredatorSettings : ScriptableObject
     public float maxVision = 30f;
     public float stepAngle = 5.0f;
     public int nEyes = 20;
+    public float maxTrackingDistance = 40f;
 
     [Header("Collisions")]
     public LayerMask obstacleMask;
     public float boundsRadius = 2f;
     public float avoidCollisionWeight = 10;
-    public float collisionAvoidDst = 5;
+    public float collisionAvoidDst = 7;
 
     // TO ADD POTENTIALLY
     // private int gender
@@ -42,5 +41,4 @@ public class PredatorSettings : ScriptableObject
     // private float BabyScale
     // Male colour
     // Female colour
-
 }

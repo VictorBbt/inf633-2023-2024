@@ -12,15 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1037a4ed09b664d1fbb586263e134842, type: 3}
   m_Name: PredatorSettings
   m_EditorClassIdentifier: 
-  maxAngle: 10
-  minSpeed: 0.7
-  maxSpeed: 0.7
-  maxEnergy: 20
+  maxAngle: 1
+  minSpeed: 0.9
+  maxSpeed: 1
+  maxEnergy: 50
   lossEnergy: 0
-  gainEnergy: 5
-  maxReproduce: 40
+  gainEnergy: 15
+  maxReproduce: 60
   urgeReproduceRate: 0
-  gainReproduce: 20
+  gainReproduce: 30
   predatorMask:
     serializedVersion: 2
     m_Bits: 128
@@ -30,6 +30,7 @@ MonoBehaviour:
   maxVision: 30
   stepAngle: 5
   nEyes: 20
+  maxTrackingDistance: 40
   obstacleMask:
     serializedVersion: 2
     m_Bits: 64

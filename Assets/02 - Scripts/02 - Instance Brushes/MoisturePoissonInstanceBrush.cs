@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
+/// <summary>
+/// Brush based on a Poisson disc sampling with a moisture map (made with Perlin noise) in background to have dry and moist zones
+/// </summary>
 public class MoisturePoissonInstanceBrush : InstanceBrush {
 
     [Header("Poisson Settings")]
@@ -29,16 +32,14 @@ public class MoisturePoissonInstanceBrush : InstanceBrush {
         Vector3 gridSize = terrain.gridSize();
         moisture_data = MoistureMapGenerator();
         float minMoisture = getMinMoisture(moisture_data, gridSize);
-        Debug.Log("MinMoisture " + minMoisture.ToString());
+
         float maxMoisture = getMaxMoisture(moisture_data, gridSize);
-        Debug.Log("MaxMoisture " + maxMoisture.ToString());
-        // The samples are ge,erated in a rectangle but have no coordinates in our terrain
+
+        // The samples are generated in a rectangle but have no coordinates in our terrain
         // x and z are the middle of our rectangle, so the origin of the rectangle must be at (x - radius, z - radius)
         float terrainXPos = Mathf.Max(0, x - radius);
         float terrainZPos = Mathf.Max(0, z - radius);
         Vector2 terrainPos = new Vector2(terrainXPos, terrainZPos);
-        Debug.Log("True coords: (" + x.ToString() + "," + z.ToString() + ")");
-        Debug.Log("Poisson sampling origin: " + terrainPos.ToString());
 
         PoissonDiscSampler PoissonSampler = new PoissonDiscSampler((float)radius*2f, (float)radius*2f, minFreeDistance);
         foreach(Vector2 sample in PoissonSampler.Samples())
@@ -46,9 +47,9 @@ public class MoisturePoissonInstanceBrush : InstanceBrush {
             Vector3 terrainSamplePos = new Vector3(terrainXPos + sample.x, terrain.getInterp(sample.x, sample.y), terrainZPos+ sample.y);
             
             float interpolatedMoisture = InterpMoisture(terrainSamplePos.x, terrainSamplePos.z);
-            Debug.Log("Interp Moisture = " + interpolatedMoisture.ToString());
+
             float moisture = InverseLerp(minMoisture, maxMoisture, interpolatedMoisture);
-            Debug.Log("Normed Moisture = " + moisture.ToString());
+
             float probaMoisture = Random.value;
             if(probaMoisture < 1 - moisture)
             {
@@ -62,7 +63,6 @@ public class MoisturePoissonInstanceBrush : InstanceBrush {
                 int prefabToSpawn = DryFamilyTreeIndexes[Random.Range(0, DryFamilyTreeIndexes.Length - 1)];
                 float scale = terrain.PrefabParameters[prefabToSpawn].min_scale + Random.value * (terrain.PrefabParameters[prefabToSpawn].max_scale - terrain.PrefabParameters[prefabToSpawn].min_scale);
                 terrain.spawnObject(terrainSamplePos, scale, prefabToSpawn);
-                terrain.debug.text = "Spawned object at:" + terrainSamplePos.ToString();
             } else
             {
                 // We spawn a moist tree, randomly between the index prefabs of DryFamilyTreeIndex
@@ -75,7 +75,6 @@ public class MoisturePoissonInstanceBrush : InstanceBrush {
                 int prefabToSpawn = MoistFamilyTreeIndexes[Random.Range(0, MoistFamilyTreeIndexes.Length - 1)];
                 float scale = terrain.PrefabParameters[prefabToSpawn].min_scale + Random.value * (terrain.PrefabParameters[prefabToSpawn].max_scale - terrain.PrefabParameters[prefabToSpawn].min_scale);
                 terrain.spawnObject(terrainSamplePos, scale, prefabToSpawn);
-                terrain.debug.text = "Spawned object at:" + terrainSamplePos.ToString();
             }
 
         }
@@ -90,8 +89,6 @@ public class MoisturePoissonInstanceBrush : InstanceBrush {
     {
         float XOffset = x - (int)x;
         float ZOffset = z - (int)z;
-        Debug.Log("XOffset = " + XOffset.ToString());
-        Debug.Log("ZOffset = " + ZOffset.ToString());
 
         float moistureSW = moisture_data[Mathf.Max(0, (int)x), Mathf.Max(0, (int)z)];
         //Debug.Log("Moisture SW = " + moistureSW.ToString());
@@ -135,7 +132,6 @@ public class MoisturePoissonInstanceBrush : InstanceBrush {
         terrain.debug.text = "Successfully generated a Perlin-based Moisture Map";
         return moisture_data;
     }
-
 
     public (float, float) Normalize(float x, float z, float scale, Vector3 gridSize)
     {

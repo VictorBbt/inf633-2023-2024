@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-
+/// <summary>
+/// Digs a well on the terrain
+/// </summary>
 public class WellBrush : TerrainBrush {
 
     public float IncreaseHeight = 0;
@@ -20,12 +22,10 @@ public class WellBrush : TerrainBrush {
                 {
                     float Squareddist = Mathf.Pow(xi, 2) + Mathf.Pow(zi, 2);
                     CurrentHeight = terrain.get(x + xi, z + zi);
-                    // only a symmetry wrt to radius/2
+                    // Basically the symmetry of a Gaussian wrt to the (x, z) plan
                     terrain.set(x + xi, z + zi, Mathf.Max(CurrentHeight + IncreaseHeight/(Mathf.Sqrt(2 * Mathf.PI) * sigma) - Gaussian2D(IncreaseHeight, Squareddist, sigma), 0));
                 }
             }
-
-
         }
     }
 

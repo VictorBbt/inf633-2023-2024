@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Set height to a specified value
+/// </summary>
 public class SimpleBrush : TerrainBrush {
 
     public float height = 5;

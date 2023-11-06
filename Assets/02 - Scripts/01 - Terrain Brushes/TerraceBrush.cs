@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-
+/// <summary>
+/// Creates a terrain in forms of terraces, where you can choose the height of the terrace
+/// </summary>
 public class TerraceBrush : TerrainBrush {
 
     public float IncreaseHeight = 0;

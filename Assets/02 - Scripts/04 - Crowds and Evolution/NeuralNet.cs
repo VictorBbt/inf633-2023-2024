@@ -5,7 +5,9 @@ using UnityEngine;
 using UnityEngine.UI;
 
 
-
+/// <summary>
+/// Implements feedforward neural networks for gene optimization
+/// </summary>
 public class SimpleNeuralNet
 {
     private List<float[,]> allWeights; // Stores the weights of ALL the network, at index 0 --> weights of layer 0, etc...
@@ -43,7 +45,7 @@ public class SimpleNeuralNet
     {
 
         // Weights: bias + input x neurons
-        float[,] weights = new float[input + 1, numberNodes]; // Fully connected layer, inpit +1 because we have the bias
+        float[,] weights = new float[input + 1, numberNodes]; // Fully connected layer, input +1 because we have the bias
         for (int i = 0; i < weights.GetLength(0); i++) // Loop on the inputs
         {
             for (int j = 0; j < weights.GetLength(1); j++)
@@ -74,12 +76,17 @@ public class SimpleNeuralNet
                 outs[idxNeuron] = transferFunction(sum); // Apply transfer function
             }
         }
-        return allResults[allResults.Count - 1]; // Return final result
+        return allResults[allResults.Count - 1]; // Return final layer as result
     }
 
-    private float transferFunction(float value) // We use the sigmoid, maybe we can change with ReLU (faster computation and don't need to backpropagate)
+    private float transferFunction(float value) // We use the sigmoid, maybe we can change with ReLU (faster computation and don't need to backpropagate so no problem if not differentiable)
     {
         return 1.0f / (1.0f + Mathf.Exp(-value));
+    }
+
+    private float reluTransferFunction(float value)
+    {
+        return Mathf.Max(0, value);
     }
 
     // Randomly change network weights

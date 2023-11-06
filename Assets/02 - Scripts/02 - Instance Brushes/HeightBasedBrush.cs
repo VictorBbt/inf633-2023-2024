@@ -3,20 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 
-// Brush learning from example distribution (real-life scenario)
-// Poisson sampling to spawn objects ?
-// Cluster or not ?
+// Brush based on the height of the terrain
 public class HeightBasedBrush : InstanceBrush {
 
+    //The indexes correspond to the index in the Terrain tools
 
-    // O: food
-    // 1: sandyRock
-    // 2: conifer Tree
-    // 3: big tree
-    // 4: small alpine tree
-    // 5: Big rocks
-
-    // the best would be to get the texture and tp spawn objects accordingly
     [Range(0,1)]
     public float sandyRockHeightThreshold;
     [Range(0, 1)]
@@ -26,13 +17,9 @@ public class HeightBasedBrush : InstanceBrush {
     [Range(0, 1)]
     public float mountainRocksHeightThreshold;
 
-    //public int treeSteepnessThreshold; // 40/50 très pentu, 7 quasi rien/ 20/30 colline
-    //public int bushSteepnessThreshold;
-
     float minHeight;
     float maxHeight;
 
-    // store then an array of game object
     public override void draw(float x, float z) {
         minHeight = terrain.getMinHeight();
         maxHeight = terrain.getMaxHeight();

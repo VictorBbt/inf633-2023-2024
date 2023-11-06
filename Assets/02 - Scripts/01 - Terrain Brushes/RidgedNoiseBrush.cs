@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
+/// <summary>
+/// Simplpe ridge noise brush: DEPRECATED - use TerrainCreationBrush instead
+/// </summary>
 public class RidgedNoiseBrush : TerrainBrush {
 
     public float Frequency = 1;

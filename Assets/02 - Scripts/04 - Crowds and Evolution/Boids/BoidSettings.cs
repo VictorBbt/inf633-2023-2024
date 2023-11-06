@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Attached to the BOID manager
 [CreateAssetMenu]
 public class BoidSettings : ScriptableObject
 {
@@ -14,13 +13,13 @@ public class BoidSettings : ScriptableObject
     public float swapStrength = 10.0f;
     public float mutateStrength = 0.5f;
     public float maxAngle = 10.0f;
-    public float minSpeed = 5f; // In Capsule controller, the max speed is 0.5
+    public float minSpeed = 5f; // The speed is not the same scale as the predators
     public float maxSpeed = 10f;
-    public float perceptionRadius = 2.5f; // Radius where the preys can view their peers
-    public float avoidanceRadius = 1;
+    public float perceptionRadius = 20f; // Radius where the preys can view their peers
+    public float avoidanceRadius = 3;
     public float maxSteerForce = 3;
 
-    [Header("Energy parameters")] // Equivalent to "urge to eat - Add the same for water and reproduction
+    [Header("Energy parameters")] // Equivalent to "urge to eat - Possibly add the same for water and reproduction
     public float maxEnergy = 10.0f;
     public float lossEnergy = 0.1f;
     public float gainEnergy = 10.0f;
@@ -37,9 +36,9 @@ public class BoidSettings : ScriptableObject
 
     [Header("Collisions")]
     public LayerMask obstacleMask;
-    public float boundsRadius = .27f;
+    public float boundsRadius = 1f;
     public float avoidCollisionWeight = 10;
-    public float collisionAvoidDst = 5;
+    public float collisionAvoidDst = 7;
 
     // TO ADD POTENTIALLY
     // private int gender

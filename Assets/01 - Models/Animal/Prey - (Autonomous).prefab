@@ -59,6 +59,7 @@ MonoBehaviour:
   tfm: {fileID: 0}
   foodVision: []
   predVision: []
+  willBeDestroyed: 0
   targetWeight: 1
   alignWeight: 1
   cohesionWeight: 1
@@ -89,7 +90,7 @@ CapsuleCollider:
   m_Radius: 0.57
   m_Height: 2.15
   m_Direction: 2
-  m_Center: {x: 0, y: 0.97, z: -0.01}
+  m_Center: {x: 0, y: 1, z: -0.01}
 --- !u!1 &6733265590630552185
 GameObject:
   m_ObjectHideFlags: 0
@@ -152,7 +153,7 @@ MeshRenderer:
   m_RenderingLayerMask: 4294967295
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 95c3038f227daf542b4077b9447429b0, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

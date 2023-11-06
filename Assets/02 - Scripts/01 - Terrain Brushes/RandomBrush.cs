@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 
+/// <summary>
+/// Generates pseudo random noise on the terrain
+/// </summary>
 public class RandomBrush : TerrainBrush {
 
     public float MaxIncreaseHeight = 0;

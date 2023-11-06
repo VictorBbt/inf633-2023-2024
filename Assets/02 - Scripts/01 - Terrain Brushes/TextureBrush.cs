@@ -3,10 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 
-
+/// <summary>
+/// Allows to put textures on the terrain
+/// The texture indexes are the corresponding indexes in the Terrain GUI inspector
+/// We are forced to manually set the splatmaps, as we can't wriite a Custom Terrain shader (the Terrain tool already has its own custom shader)
+/// </summary>
 public class TextureBrush : TerrainBrush {
 
-    public AdditionalLayerSettings[] additionalLayerSettings;
+    public AdditionalLayerSettings[] additionalLayerSettings; // Corresponding indexes in the Terrain GUI inspector (first layer is 0 (the one set at low height)
     public bool GrassAndCliffSteepness = true;
     public Vector3 sunDirection;
 
@@ -59,9 +63,9 @@ public class TextureBrush : TerrainBrush {
                 float[] startHeights = additionalLayerSettings.Select(x => x.startHeight).ToArray();
                 float[] blendStrengths = additionalLayerSettings.Select(x => x.blendStrength).ToArray();
 
-                // SET CUSTOM RULES
+                // SET CUSTOM RULES:
 
-                // 1. Blending based on heights
+                // 1. Blending based on heights with linear blending between the adjacent textures
                 for (int i = 0; i < layerCount - 1; i++)
                 {
                     // if normalizedHeight is too big, we clamp it
@@ -70,17 +74,7 @@ public class TextureBrush : TerrainBrush {
                 }
                 // Setting up last layer
                 splatWeights[layerCount - 1] = LinearBlending(layerCount - 1, normalizedHeight, startHeights[layerCount - 1], maxHeight, blendStrengths[layerCount - 1]);
-                /* TEST ONLY
-                for (int i = 0; i < 2; i++) 
-                {
-                    // if normalizedHeight is too big, we clamp it
-                    float textureWeight = LinearBlending(i, normalizedHeight, startHeights[i], startHeights[i + 1], blendStrengths[i]);
-                    splatWeights[i] = textureWeight;
-                }
 
-                splatWeights[2] = LinearBlending(2, normalizedHeight, startHeights[2], maxHeight, blendStrengths[2]);
-                terrain.debug.text = y.ToString()+ ' ' + q.ToString() + ' ' +splatWeights[0].ToString() + ' ' + splatWeights[1].ToString() + ' ' + splatWeights[2].ToString();
-                */
 
                 //// 2. Taking steepness into account
                 //    // texture[2] Grass stronger on flatter terrain
@@ -169,7 +163,7 @@ public class TextureBrush : TerrainBrush {
 
             }
 
-            if (index == layerCount)
+            if (index == layerCount) 
             {
                 if(startHi == startHNexti)
                 {
@@ -184,6 +178,7 @@ public class TextureBrush : TerrainBrush {
             }
             else
             {
+                // triangle shaped function which equals to one at midZone and linearly decreases to BlendRate at the adjacent junctions of textures (startHi, startNextHi)
                 float midZone = (startHi + startHNexti) / 2;
                 if(h <= midZone)
                 {

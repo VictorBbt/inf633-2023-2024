@@ -18,7 +18,7 @@ public class GeneticAlgo : MonoBehaviour
     public ComputeShader computeBoid;
     const int threadGroupSize = 1024;
 
-    [Header("Prey settings")]
+    [Header("Predator settings")]
     public GameObject predatorPrefab;
     public PredatorSettings predSettings;
 
@@ -37,7 +37,6 @@ public class GeneticAlgo : MonoBehaviour
     [HideInInspector]
     public float currentGrowth;
 
-    // make this public to get the list of animals in the Boid manager
     [HideInInspector]
     public List<Prey> preys; // Make a list of GameObject List<GameObject>[] where the index is the index of the AnimalParameters, when using the System.Serializable feature
     [HideInInspector]
@@ -47,11 +46,9 @@ public class GeneticAlgo : MonoBehaviour
     protected float width;
     protected float height;
 
-    // Unity crashes if we pre compute this.
+    // Unity crashes if we pre compute this: maybe put it in a static class
     //protected List<(int, int)> possibleGrassCoords;
     //protected List<(int, int)> possiblePreySpawnCoords;
-
-    bool debug = false;
 
     [HideInInspector]
     public List<int> numPredators;
@@ -74,6 +71,9 @@ public class GeneticAlgo : MonoBehaviour
     [HideInInspector]
     private float meanSeparateWeight;
 
+    // Debugging  or getting information
+    bool debug = false;
+
     void Start()
     {
         // Retrieve terrain.
@@ -85,19 +85,18 @@ public class GeneticAlgo : MonoBehaviour
         // Initialize terrain growth.
         currentGrowth = 0.0f;
 
-        // Initialize animals array. Only prey for the moment
         if (debug)
         {
             Debug.Log("2 - Spawning " + preyPopulationSize.ToString() + " preys in GeneticAlgo ");
             Debug.Log("     Spawning " + predatorPopulationSize.ToString() + " predators in GeneticAlgo");
         }
 
+        // Initialize prey and predator list
         preys = new List<Prey>();
         for (int i = 0; i < preyPopulationSize; i++)
         {
             Prey prey = makePrey();
             preys.Add(prey);
-            //animal.GetComponent<Prey>().Initialize(Gsettings);
         }
 
         predators = new List<Predator>();
@@ -106,7 +105,7 @@ public class GeneticAlgo : MonoBehaviour
             Predator pred = makePredator();
             predators.Add(pred);
         }
-        // Maybe in a static class ?
+
         //possibleGrassCoords = getFoodZone(); // To save computing time, we precompute the possible indexes where grass can appear (coordinates of heightmap)
         //                                     // instead of sampling at random on the terrain and then looking if it is in Zone
         //possiblePreySpawnCoords = getSpawnZone(AnimalParameters[0].animal_index);
@@ -119,7 +118,7 @@ public class GeneticAlgo : MonoBehaviour
             Debug.Log("In Genetic Algo update");
         }
         
-        // Keeps animal to a minimum.
+        // Keeps animals to a minimum to foster evolution
         while (preys.Count < preyPopulationSize / 2f)
         {
             Prey newPrey = makePrey();
@@ -139,9 +138,7 @@ public class GeneticAlgo : MonoBehaviour
         updateBoids();
 
         // Update position of all the predators
-            // Predators are updated after boids, so the target can sometimes die by hunger and is reached at the same time by the predator
         updatePredators();
-
 
         int numAliveBoids = preys.Count;
         int numAlivePredators = predators.Count;
@@ -158,7 +155,6 @@ public class GeneticAlgo : MonoBehaviour
         Vector2 detail_sz = customTerrain.detailSize();
         int[,] details = customTerrain.getDetails();
 
-        //int objectCount = customTerrain.getObjectCount();
         currentGrowth += vegetationGrowthRate;
         while (currentGrowth > 1.0f)
         {
@@ -179,7 +175,8 @@ public class GeneticAlgo : MonoBehaviour
 
         boids = preys.ToArray();
         int numBoids = boids.Length;
-        // Compute Buffer approach
+
+        // Compute Buffer approach for faster computation: code taken from Sebastian Lague's video on BOIDS
         if ((boids != null) && (boids.Length != 0))
         {
             var boidData = new BoidData[numBoids];
@@ -194,6 +191,8 @@ public class GeneticAlgo : MonoBehaviour
             computeBoid.SetInt("numBoids", boids.Length);
             computeBoid.SetFloat("viewRadius", preySettings.perceptionRadius);
             computeBoid.SetFloat("avoidRadius", preySettings.avoidanceRadius);
+
+     // ADD THIS TO ADD A VISION ANGLE FOR PEERS
             //computeBoid.SetFloat("maxVisionCos", Mathf.Cos(settings.stepAngle));
             /* In buffer
             // float maxVisionCos;
@@ -201,6 +200,7 @@ public class GeneticAlgo : MonoBehaviour
             // float cosAngle = cos(scalarProduct);
             // && (scalarProduct > 0) && (cosAngle < maxVisionCos) )
             */
+
             int threadGroups = Mathf.CeilToInt(numBoids / (float)threadGroupSize);
             computeBoid.Dispatch(0, threadGroups, 1, 1);
             boidBuffer.GetData(boidData);
@@ -219,7 +219,7 @@ public class GeneticAlgo : MonoBehaviour
             }
             boidBuffer.Release();
 
-            if (debug)
+            if (Time.frameCount % 500 == 0)
             {
                 Debug.Log("mean: targetW: " + (meanTargetWeight / numBoids).ToString());
                 Debug.Log("mean alignW: " + (meanAlignWeight / numBoids).ToString());
@@ -228,21 +228,13 @@ public class GeneticAlgo : MonoBehaviour
                 Debug.Log("______________________________________");
             }
 
-            Debug.Log("mean: targetW: " + (meanTargetWeight / numBoids).ToString());
-            Debug.Log("mean alignW: " + (meanAlignWeight / numBoids).ToString());
-            Debug.Log("mean cohesionW: " + (meanCohesionWeight / numBoids).ToString());
-            Debug.Log("mean separateW: " + (meanSeparateWeight / numBoids).ToString());
-            Debug.Log("______________________________________");
             targetWeights.Add(meanTargetWeight / numBoids);
             alignWeights.Add(meanAlignWeight / numBoids);
             cohesionWeights.Add(meanCohesionWeight / numBoids);
             separateWeights.Add(meanSeparateWeight / numBoids);
         }
 
-
-
-
-
+    // DOUBLE FOR LOOP APPROACH: longer...
         //for (int id = 0; id < numBoids; id++)
         //{
         //    for (int indexB = 0; indexB < numBoids; indexB++)
@@ -272,7 +264,6 @@ public class GeneticAlgo : MonoBehaviour
         //        }
         //        boids[id].UpdateBoid();
         //    }
-
         //}
 
         for (int i = 0; i < boids.Length; i++)
@@ -280,15 +271,7 @@ public class GeneticAlgo : MonoBehaviour
 
             // Will destroy the animal if it has not enough energy
             bool isAlive = boids[i].UpdatePositionAndEnergy();
-            //if (isAlive)
-            //{
-                
-            //}
-            
         }
-
-        //No need to do this as boids will be updated at the beginning of the next update
-        //Prey[] survivorBoids = boids.Where(item => item != null).ToArray();
     }
 
     public void updatePredators()
@@ -305,8 +288,8 @@ public class GeneticAlgo : MonoBehaviour
         if (debug)
         {
             Debug.Log("3 - Instantiating prey in makePrey at position: " + position.ToString());
-
         }
+
         GameObject animal = Instantiate(preyPrefab, transform);
         Prey newPrey = animal.GetComponent<Prey>();
         newPrey.transform.position = position;
@@ -332,7 +315,7 @@ public class GeneticAlgo : MonoBehaviour
         return newPredator;
     }
 
-    public Prey makePreyFromParent(Vector3 position, Quaternion rotation)
+    public Prey makePreyFromParent(Vector3 position, Quaternion rotation) // Same function but with a non random rotation to not tweak the BOIDS model
     {
         if (debug)
         {
@@ -371,11 +354,9 @@ public class GeneticAlgo : MonoBehaviour
         {
             Debug.Log("Parent Prey is spawning a child");
         }
-        //Debug.Log("Parent is spawning a child");
         Prey newPrey = makePreyFromParent(parent.transform.position, parent.transform.rotation);
         newPrey.InheritFoodBrain(parent.GetFoodBrain(), true);
         newPrey.InheritReactionBrain(parent.GetReactionBrain(), true);
-        //newPrey.InitializeChildren(parent);
         preys.Add(newPrey);
     }
 
@@ -392,7 +373,7 @@ public class GeneticAlgo : MonoBehaviour
 
     public void removePrey(Prey p)
     {
-        p.willBeDestroyed = true; // Avoid being eaten twice in one Update loop, or create exception
+        p.willBeDestroyed = true; // DEPRECATED: Avoid being eaten twice in one Update loop, or create exception
         preys.Remove(p);
         GameObject correspondingObj = p.gameObject;
         Destroy(correspondingObj);
@@ -400,7 +381,6 @@ public class GeneticAlgo : MonoBehaviour
         {
             Debug.Log("Destroyed Prey");
         }
-        Debug.Log("Destroyed Prey");
     }
 
     public void removePredator(Predator pred)
@@ -431,14 +411,11 @@ public class GeneticAlgo : MonoBehaviour
 
         predator.energy = predSettings.maxEnergy;
         predator.urgeToReproduce = predSettings.maxReproduce;
-
         predator.tfm = transform;
         predator.speed = (predSettings.minSpeed + predSettings.maxSpeed) / 2;
-        //predator.velocity = predator.tfm.forward * (predSettings.minSpeed + predSettings.maxSpeed) / 2;
     }
 
-
-    // Setup for ComputeBuffer
+    // Structure for ComputeBuffer
     public struct BoidData
     {
         public Vector3 position;
@@ -460,6 +437,8 @@ public class GeneticAlgo : MonoBehaviour
 
     /// FUNCTIONS THAT CAN UPGRADE THE MODEL BUT THAT ARE NOT USED TO SAVE COMPUTATION AND MEMORY ///
 
+    // ABSTRACT ANIMAL CLASS
+
     /// <summary>
     /// Method to instantiate an animal prefab. It must contain the animal.cs class attached.
     /// </summary>
@@ -471,7 +450,6 @@ public class GeneticAlgo : MonoBehaviour
     //    {
     //        Debug.Log("3 - Instantiating Animal in makeAnimal at position: " + position.ToString());
     //    }
-
     //    GameObject animal = Instantiate(AnimalParameters[index].animalPrefab, transform);
     //    animal.GetComponent<Animal>().Setup(customTerrain, this);
     //    animal.transform.position = position;
@@ -488,10 +466,7 @@ public class GeneticAlgo : MonoBehaviour
     //    Vector3 scale = terrain.terrainData.heightmapScale;
     //    float x = UnityEngine.Random.value * width;
     //    float z = UnityEngine.Random.value * height;
-
     //    float y = customTerrain.getInterp(x / scale.x, z / scale.z);
-
-    //    // Saving computation time
     //    //while (!isInSpawnZone(x / scale.x, z / scale.z,y, index))
     //    //{
     //    //    x = UnityEngine.Random.value * width;
@@ -524,19 +499,17 @@ public class GeneticAlgo : MonoBehaviour
     /// <param name="animal"></param>
     //public void removeAnimal(Animal animal)
     //{
-
     //    animals.Remove(animal.transform.gameObject);
     //    Destroy(animal.transform.gameObject);
     //    if (debug)
     //    {
     //        Debug.Log("Destroyed Animal");
     //    }
-
     //}
 
+    // TWEAK SPAWN ZONES
     //public bool FoodisInZone(float x, float z)
     //{
-
     //    float y = InverseLerp(customTerrain.getMinHeight(), customTerrain.getMaxHeight(), customTerrain.getInterp(x, z));
     //    float steep = customTerrain.getSteepness(x, z);
     //    if ((y > minFoodHeightThreshold) && (y < maxFoodHeightThreshold) && (steep > minFoodSteepnessThreshold) && (steep < maxFoodSteepnessThreshold))
@@ -557,11 +530,6 @@ public class GeneticAlgo : MonoBehaviour
     //    else { return false; }
     //}
 
-    //private float InverseLerp(float min, float max, float val)
-    //{
-    //    return Mathf.Clamp01((val - min) / (max - min));
-    //}
-
     //[System.Serializable]
     //public class AnimalsSpawnZone
     //{
@@ -577,7 +545,10 @@ public class GeneticAlgo : MonoBehaviour
     //    public float maxSteepness;
 
     //    public ScriptableObject settings;
+    //}
 
-
+    //private float InverseLerp(float min, float max, float val)
+    //{
+    //    return Mathf.Clamp01((val - min) / (max - min));
     //}
 }

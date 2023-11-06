@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-
+/// <summary>
+/// Increases the height of the terrain with a gaussian, and takes off equivalent volume of material nearby
+/// </summary>
 public class ConstantVolumeBrush : TerrainBrush {
 
     public float IncreaseHeight = 0;

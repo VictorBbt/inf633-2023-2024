@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
+/// <summary>
+/// Add a volume that follows a gaussian distribution
+/// </summary>
 public class GaussianIncreaseBrush : TerrainBrush {
 
     public float IncreaseHeight = 0;

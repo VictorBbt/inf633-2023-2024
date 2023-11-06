@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 
+/// <summary>
+/// GLOBAL BRUSH
+/// This brush allow to generate random realistic terrain (Perlin, Ridged Noise, Terrace) with custom parameters
+/// </summary>
 public class TerrainCreationBrush : TerrainBrush
 {
     System.Random rand = new System.Random();
@@ -19,7 +23,8 @@ public class TerrainCreationBrush : TerrainBrush
     public bool StandardPerlin = true;
     public bool Ridged = false;
     public bool Terrace = false;
-    [Range(0,500)]
+
+    [Range(0,500)] // Circular Filtering to add peaks and valleys
     public float CircularFiltering = 364;
     public int NumberOfPeaks = 1;
 
@@ -30,15 +35,7 @@ public class TerrainCreationBrush : TerrainBrush
     {
         Vector3 gridSize = terrain.gridSize();
 
-        // Set initial height to A/2
-        //for(int xi = 0; xi <= gridSize.x; xi++)
-        //{
-        //    for(int zi = 0; zi <= gridSize.x; zi++)
-        //    {
-        //        terrain.set(xi, zi, (float)InitialAmplitude / 2);
-        //    }
-        //}
-
+        // Standard Perlin
         if (StandardPerlin)
         {
             for (int xi = 0; xi <= gridSize.x; xi++)
@@ -69,6 +66,7 @@ public class TerrainCreationBrush : TerrainBrush
             }
         }
 
+        // Ridged noise
         else if (Ridged)
         {
             for (int xi = 0; xi <= gridSize.x; xi++)
@@ -106,6 +104,7 @@ public class TerrainCreationBrush : TerrainBrush
             }
         }
 
+        // Terraces
         else if (Terrace)
         {
             for (int xi = 0; xi <= gridSize.x; xi++)
@@ -143,7 +142,8 @@ public class TerrainCreationBrush : TerrainBrush
             }
         }
 
-        if (CircularFiltering > 0)
+        // Gaussian 2D filter on several random places at the terrain (or at the center if the number of peaks is set to one
+        if (CircularFiltering > 0) // Setting circular filtering to O won't filter anything
         {
             float[,] hMap;
             if (NumberOfPeaks == 1)
@@ -165,6 +165,7 @@ public class TerrainCreationBrush : TerrainBrush
 
                 for (int n = 0; n < NumberOfPeaks; n++)
                 {
+                    // if you want to have the peaks at chosen posiitions, change opsX and posZ here
                     int posX = rand.Next(0, (int)terrain.gridSize().x - 1);
                     int posZ = rand.Next(0, (int)terrain.gridSize().z - 1);
                     float[,] map1 = circularFiltering(posX, posZ);
@@ -179,6 +180,7 @@ public class TerrainCreationBrush : TerrainBrush
 
             }
 
+            // Setting the values of the heightmap on the terrain
             for (int xi = 0; xi <= terrain.gridSize().x; xi++)
             {
                 for (int zi = 0; zi <= terrain.gridSize().z; zi++)
@@ -186,11 +188,7 @@ public class TerrainCreationBrush : TerrainBrush
                     terrain.set(xi, zi, hMap[xi, zi]);
                 }
             }
-
-
         }
-
-
     }
 
     public (float, float) Normalize(float x, float z, float Scale, Vector3 gridSize)
@@ -205,7 +203,6 @@ public class TerrainCreationBrush : TerrainBrush
     {
         Vector3 gridSize = terrain.gridSize();
         bool xInRange = (x > 0) && (x < gridSize.x);
-        //terrain.debug.text = xInRange.ToString();
         bool zInRange = (z > 0) && (z < gridSize.z);
 
         return xInRange && zInRange;
@@ -219,27 +216,26 @@ public class TerrainCreationBrush : TerrainBrush
 
     private float[,] circularFiltering(int Centerx,int Centerz)
     {
-        float[,] hMap = new float[(int)(terrain.gridSize().x)+1 ,(int)(terrain.gridSize().z)+1];
+        float[,] hMap = new float[(int)(terrain.gridSize().x)+1 ,(int)(terrain.gridSize().z)+1]; // init heightmap
         for (int xi = 0; xi <= terrain.gridSize().x; xi++)
         {
             for (int zi = 0; zi <= terrain.gridSize().z; zi++)
             {
-                Vector2 CenteredOrigin = new Vector2(xi - Centerx, zi - Centerz);
+                Vector2 CenteredOrigin = new Vector2(xi - Centerx, zi - Centerz); // Center of the gaussian
                 float dist = CenteredOrigin.magnitude;
                 float CurrentHeight = terrain.get(xi, zi);
 
                 float minCoef = GaussianF(CircularFiltering, CircularFiltering);
-                terrain.debug.text = minCoef.ToString();
-                if (dist <= CircularFiltering)
+                if (dist <= CircularFiltering) 
                 {
                     float r = Mathf.Sqrt(CenteredOrigin.x * CenteredOrigin.x + CenteredOrigin.y * CenteredOrigin.y);
-                    float penCoef = GaussianF(r, CircularFiltering);
+                    float penCoef = GaussianF(r, CircularFiltering); // Compute by how much it is decreased (gaussian 2D of radius CircularFiltering)
                     hMap[xi, zi] = penCoef * CurrentHeight;
                     
                 }
                 else
                 {
-                    hMap[xi, zi] = minCoef * CurrentHeight;
+                    hMap[xi, zi] = minCoef * CurrentHeight;// if we are not in the range, we set to the values on the radius of the filter (ensures continuity)
                 }
             }
         }
